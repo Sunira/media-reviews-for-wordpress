@@ -1,0 +1,107 @@
+/* Book Reviews Admin Styles */
+
+.book-rating .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.book-rating .dashicons-star-filled {
+    color: #ffc107;
+}
+
+.book-rating .dashicons-star-empty {
+    color: #ccc;
+}
+
+/* Rating selector in form */
+.rating-selector {
+    display: flex;
+    gap: 5px;
+}
+
+.rating-star {
+    cursor: pointer;
+    margin: 0;
+    display: inline-block;
+}
+
+.rating-star input[type="radio"] {
+    display: none;
+}
+
+.rating-star .dashicons {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: #ccc;
+    transition: color 0.2s ease;
+}
+
+.rating-star:hover .dashicons,
+.rating-star input[type="radio"]:checked ~ .dashicons {
+    color: #ffc107;
+}
+
+/* Highlight all stars up to hovered star */
+.rating-selector:hover .rating-star .dashicons {
+    color: #ccc;
+}
+
+.rating-selector .rating-star:hover .dashicons,
+.rating-selector .rating-star:hover ~ .rating-star .dashicons {
+    color: #ccc;
+}
+
+.rating-selector .rating-star:hover .dashicons {
+    color: #ffc107;
+}
+
+.rating-star input[type="radio"]:checked ~ .dashicons,
+.rating-star:has(input[type="radio"]:checked) .dashicons {
+    color: #ffc107;
+}
+
+/* Show selected rating and all before it */
+.rating-selector:not(:hover) .rating-star:has(input:checked) .dashicons,
+.rating-selector:not(:hover) .rating-star:has(input:checked) ~ .rating-star input:checked ~ .dashicons {
+    color: #ffc107;
+}
+
+/* Reverse direction for filled stars */
+.rating-star:has(input[type="radio"]:checked) .dashicons,
+.rating-star input[type="radio"]:checked ~ .rating-star .dashicons {
+    color: #ccc;
+}
+
+.rating-star input[type="radio"]:checked ~ .dashicons {
+    color: #ffc107;
+}
+
+/* Cover image preview */
+#cover-image-preview {
+    margin-bottom: 10px;
+}
+
+#cover-image-preview img {
+    border: 1px solid #ddd;
+    padding: 5px;
+    background: #fff;
+}
+
+.required {
+    color: #dc3232;
+}
+
+/* Table improvements */
+.wp-list-table td {
+    vertical-align: middle;
+}
+
+.button-link-delete {
+    color: #b32d2e;
+}
+
+.button-link-delete:hover {
+    color: #dc3232;
+}
