@@ -108,7 +108,7 @@ if (isset($_POST['import_books']) && wp_verify_nonce($_POST['import_nonce'], 'im
             fclose($handle);
             
             echo '<div class="notice notice-success is-dismissible"><p>';
-            echo sprintf('Import completed! %d books imported successfully.', $imported);
+            echo sprintf('Import completed! %d media items imported successfully.', $imported);
             if ($errors > 0) {
                 echo sprintf(' %d errors occurred.', $errors);
             }
@@ -121,11 +121,11 @@ if (isset($_POST['import_books']) && wp_verify_nonce($_POST['import_nonce'], 'im
 ?>
 
 <div class="wrap">
-    <h1>Import/Export Books</h1>
+    <h1>Import/Export Media Reviews</h1>
     
     <div class="card" style="max-width: 800px; margin-top: 20px;">
-        <h2>Export Books</h2>
-        <p>Download all your books as a CSV file. This can be used as a backup or to import into another site.</p>
+        <h2>Export Media Reviews</h2>
+        <p>Download all your media reviews as a CSV file. This can be used as a backup or to import into another site.</p>
         
         <form method="post">
             <?php wp_nonce_field('export_books', 'export_nonce'); ?>
@@ -138,10 +138,10 @@ if (isset($_POST['import_books']) && wp_verify_nonce($_POST['import_nonce'], 'im
     </div>
     
     <div class="card" style="max-width: 800px; margin-top: 20px;">
-        <h2>Import Books</h2>
-        <p>Upload a CSV file to import books. The file should have the following columns:</p>
-        <p><code>ID, Title, Author, Rating, Genre, Status, Date Read, Review, Cover Image URL, Date Added</code></p>
-        <p><strong>Note:</strong> Only Title, Author, and Rating are required. The ID column will be ignored (new IDs will be assigned).</p>
+        <h2>Import Media Reviews</h2>
+        <p>Upload a CSV file to import media reviews. The importer supports both the current multi-media format and the older book-only format.</p>
+        <p><code>ID, Media Type, Title, Creator, Rating, Category, Status, Completion Date, Review, Cover Image URL, Date Added</code></p>
+        <p><strong>Note:</strong> Only Title, Creator, and Rating are required in the current format. For older book-only files, Author is supported instead of Creator. The ID column is ignored and new IDs will be assigned.</p>
         
         <form method="post" enctype="multipart/form-data">
             <?php wp_nonce_field('import_books', 'import_nonce'); ?>
@@ -172,17 +172,17 @@ if (isset($_POST['import_books']) && wp_verify_nonce($_POST['import_nonce'], 'im
     
     <div class="card" style="max-width: 800px; margin-top: 20px;">
         <h2>Sample CSV Format</h2>
-        <p>Here's an example of what your CSV file should look like:</p>
-        <pre style="background: #f5f5f5; padding: 15px; overflow-x: auto;">ID,Title,Author,Rating,Genre,Status,Date Read,Review,Cover Image URL,Date Added
-1,"The Great Gatsby","F. Scott Fitzgerald",5,"Fiction","finished","2024-01-15","A masterpiece of American literature","https://example.com/image.jpg","2024-01-15 10:00:00"
-2,"1984","George Orwell",5,"Dystopian","finished","2024-02-20","Powerful and thought-provoking","","2024-02-20 14:30:00"</pre>
-        
+        <p>Here is an example of the current CSV format:</p>
+        <pre style="background: #f5f5f5; padding: 15px; overflow-x: auto;">ID,Media Type,Title,Creator,Rating,Category,Status,Completion Date,Review,Cover Image URL,Date Added
+1,book,"The Great Gatsby","F. Scott Fitzgerald",5,"Fiction","finished","2024-01-15","A masterpiece of American literature","https://example.com/image.jpg","2024-01-15 10:00:00"
+2,movie,"Spirited Away","Hayao Miyazaki",5,"Animation","watched","2024-02-20","Beautiful and unforgettable","","2024-02-20 14:30:00"</pre>
+
         <h3>Valid Status Values:</h3>
         <ul>
-            <li><code>finished</code> - Book has been completed</li>
-            <li><code>currently_reading</code> - Currently reading</li>
-            <li><code>want_to_read</code> - Want to read</li>
-            <li><code>abandoned</code> - Started but did not finish</li>
+            <li><code>finished</code>, <code>currently_reading</code>, <code>want_to_read</code>, <code>abandoned</code> for books</li>
+            <li><code>watched</code>, <code>want_to_watch</code>, <code>abandoned</code> for movies</li>
+            <li><code>listened</code>, <code>currently_listening</code>, <code>want_to_listen</code> for music</li>
+            <li><code>completed</code>, <code>playing</code>, <code>want_to_play</code>, <code>abandoned</code> for games</li>
         </ul>
     </div>
 </div>

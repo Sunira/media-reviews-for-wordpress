@@ -1,6 +1,6 @@
 // Vanilla JavaScript - No jQuery!
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('📚 Book Reviews Plugin - Vanilla JS Loaded');
+    console.log('Media Reviews plugin frontend loaded');
     console.log('Total containers:', document.querySelectorAll('[data-view]').length);
     console.log('Total cards:', document.querySelectorAll('.book-card').length);
     
@@ -24,16 +24,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // Initialize each book reviews instance
+    // Initialize each media reviews instance
     document.querySelectorAll('[data-view]').forEach(container => {
         const instanceId = container.id;
         
         // Get all cards for this instance
         function getCards() {
-            return container.querySelectorAll('.book-card');
+            return container.querySelectorAll('.book-card-container');
         }
         
-        // Filter books based on current filter values
+        // Filter items based on current filter values
         function filterBooks() {
             const searchInput = container.querySelector('.book-search-input');
             const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Sort books
+        // Sort items
         function sortBooks(sortBy) {
             const grid = container.querySelector('.grid');
             const cards = Array.from(getCards());
@@ -292,41 +292,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Card click handler - using event delegation
+    // Card click handler - toggle flip
     document.addEventListener('click', (e) => {
-        const card = e.target.closest('.book-card');
+        const card = e.target.closest('.book-card-container');
         if (card) {
             e.preventDefault();
-            
-            // Read data attributes (try both ways for debugging)
-            const instanceId = card.dataset.instance || card.getAttribute('data-instance');
-            const itemId = card.dataset.itemId || card.getAttribute('data-item-id');
-            
-            console.log('=== Card Clicked ===');
-            console.log('Card element:', card);
-            console.log('Card ID:', card.id);
-            console.log('Dataset:', card.dataset);
-            console.log('Instance ID:', instanceId);
-            console.log('Item ID:', itemId);
-            console.log('Has bookReviewsData:', !!window.bookReviewsData);
-            
-            if (window.bookReviewsData) {
-                console.log('Available instances:', Object.keys(window.bookReviewsData));
-                if (window.bookReviewsData[instanceId]) {
-                    console.log('Items in this instance:', window.bookReviewsData[instanceId].length);
-                }
-            }
-            
-            if (instanceId && itemId) {
-                openModal(instanceId, itemId);
-            } else {
-                console.error('❌ Missing required data:', { 
-                    instanceId, 
-                    itemId,
-                    hasInstance: !!instanceId,
-                    hasItemId: !!itemId
-                });
-            }
+            card.classList.toggle('flipped');
+            console.log('Card flipped:', card.classList.contains('flipped'));
         }
     });
     

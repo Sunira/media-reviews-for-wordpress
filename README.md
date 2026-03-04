@@ -1,138 +1,229 @@
-# Book Reviews WordPress Plugin
+# Media Reviews WordPress Plugin
 
-A comprehensive WordPress plugin to manage and display book reviews with ratings, genres, reading status, and more.
+A WordPress plugin for managing and displaying reviews for books, movies, music albums, and video games.
 
-## Version 2.0.0 - Feature Complete
+## Version
 
-### New in Version 2.0:
-- ✅ **Frontend Display** - Shortcode to show books on any page
-- ✅ **Sorting & Filtering** - By genre, status, rating, title, author, date
-- ✅ **Search** - Real-time search by title or author
-- ✅ **Import/Export** - Backup and restore via CSV
-- ✅ **Categories/Genres** - Organize books by genre
-- ✅ **Reading Status** - Track finished, reading, want to read, abandoned
+Current version: `3.0.0`
 
-## Installation
+## Overview
 
-1. **Upload the plugin:**
-   - Download/copy the `book-reviews-plugin` folder
-   - Upload it to `/wp-content/plugins/` directory
-   - Or zip the folder and upload through WordPress admin (Plugins > Add New > Upload Plugin)
+Media Reviews adds a custom admin area in WordPress where you can store review entries with ratings, notes, cover art, categories, statuses, and dates. It also includes frontend shortcodes so you can publish your collection on any page or post.
 
-2. **Activate the plugin:**
-   - Go to WordPress Admin > Plugins
-   - Find "Book Reviews" in the list
-   - Click "Activate"
-
-3. **Database Update:**
-   - If upgrading from v1.0, the plugin will automatically add new database columns
-   - No data will be lost from existing books
-
-## Quick Start
-
-### Admin Usage:
-1. Go to **Book Reviews > Add New**
-2. Fill in title, author, rating (required)
-3. Optionally add: genre, status, date read, cover image, review
-4. Click **Add Book**
-
-### Frontend Display:
-1. Create or edit any page
-2. Add shortcode: `[book_reviews]`
-3. Publish and view!
-
-Your visitors can now search, filter, and sort your book collection.
-
-## Shortcode Usage
-
-### Basic:
-```
-[book_reviews]
-```
-
-### With Options:
-```
-[book_reviews view="grid" limit="12"]
-[book_reviews view="list" genre="Fiction"]
-[book_reviews status="currently_reading"]
-```
-
-### Attributes:
-- `view` - `grid` or `list` (default: grid)
-- `limit` - Number of books (default: all, -1 for all)
-- `genre` - Filter by genre
-- `status` - Filter by reading status
+The plugin began as a book review plugin and still keeps backward compatibility with older book-only data and shortcodes.
 
 ## Features
 
-### Admin Features
-- Add, edit, delete books
-- Upload cover images via WordPress Media Library
-- Rate books 1-5 stars
-- Categorize by genre
-- Track reading status (finished, reading, want to read, abandoned)
-- Record date read
-- Write detailed reviews
-- Import/Export via CSV
+### Admin
 
-### Frontend Features
-- Responsive grid or list view
-- Real-time search
-- Filter by genre, status, rating
-- Sort by date, title, author, rating
-- View toggle (grid/list)
-- Mobile-friendly design
-- No page reloads needed
+- Manage reviews for:
+  - Books
+  - Movies
+  - Music albums
+  - Video games
+- Add, edit, and delete media entries
+- Upload or select cover/poster/artwork images from the WordPress Media Library
+- Rate items from 0 to 5 stars
+- Store review text, category/genre, status, and date information
+- Use media-specific field labels:
+  - Book: Author, Reading Status
+  - Movie: Director, Watch Status
+  - Music: Artist, Listen Status
+  - Game: Developer, Play Status
+- Filter the admin list by media type
+- Generate frontend shortcodes from a built-in shortcode generator
+- Import and export data as CSV
 
-## Import/Export
+### Frontend
 
-### Export Books:
-1. Go to **Book Reviews > Import/Export**
-2. Click **Export to CSV**
-3. File downloads with all your books
+- Display reviews with `[media_reviews]`
+- Backward-compatible shortcode support with `[book_reviews]`
+- Search by title or creator
+- Filter by:
+  - Media type
+  - Category
+  - Status
+  - Minimum rating
+- Sort by:
+  - Date added
+  - Title
+  - Rating
+- Responsive card-based layout
+- Optional filter/search controls
 
-### Import Books:
-1. Prepare CSV with format: `Title,Author,Rating,Genre,Status,Date Read,Review,Cover URL`
-2. Go to **Book Reviews > Import/Export**
-3. Upload CSV file
-4. Click **Import**
+## Installation
 
-## Database Schema
+1. Upload the plugin folder to `/wp-content/plugins/`, or upload a zip through WordPress Admin.
+2. Activate the plugin in **Plugins**.
+3. Open **Media Reviews** in the WordPress admin.
 
-**Table:** `{prefix}_book_reviews`
+On activation, the plugin creates the `{prefix}_book_reviews` table automatically.
 
-| Field           | Type         | Description           |
-|-----------------|--------------|-----------------------|
-| id              | mediumint(9) | Primary key           |
-| title           | varchar(255) | Book title            |
-| author          | varchar(255) | Author name           |
-| rating          | tinyint(1)   | 1-5 stars             |
-| review_text     | text         | Review                |
-| cover_image_url | varchar(500) | Image URL             |
-| genre           | varchar(100) | Genre/category        |
-| reading_status  | varchar(20)  | Reading status        |
-| date_read       | date         | Completion date       |
-| date_added      | datetime     | Created timestamp     |
+## Quick Start
 
-## Customization
+### Add reviews
 
-### CSS Classes:
-- `.book-reviews-container` - Main wrapper
-- `.book-card` - Individual book
-- `.book-cover` - Cover image
-- `.book-rating` - Stars
-- `.genre-badge` - Genre tag
+1. Go to **Media Reviews > Add New**
+2. Choose a media type
+3. Enter the title, creator, and rating
+4. Optionally add category, status, date, image, and review text
+5. Save the entry
 
-### Example Custom CSS:
-```css
-.book-card {
-    border-radius: 12px;
-}
+### Display reviews
 
-.book-rating .star.filled {
-    color: #your-color;
-}
+1. Create or edit a page or post
+2. Insert a shortcode such as:
+
+```text
+[media_reviews]
 ```
+
+3. Publish the page
+
+## Shortcodes
+
+### Basic
+
+```text
+[media_reviews]
+```
+
+### Backward-compatible alias
+
+```text
+[book_reviews]
+```
+
+### Examples
+
+```text
+[media_reviews media_type="book"]
+[media_reviews media_type="movie,music" limit="12"]
+[media_reviews view="list" category="Fiction"]
+[media_reviews status="finished,abandoned"]
+[media_reviews show_filters="false"]
+```
+
+### Supported attributes
+
+- `media_type`  
+  Comma-separated media types. Supported values: `book`, `movie`, `music`, `game`. Default: `all`
+
+- `view`  
+  Display mode. Supported values: `grid`, `list`. Default: `grid`
+
+- `limit`  
+  Maximum number of items to load. Default: all items
+
+- `category`  
+  Filter by category
+
+- `genre`  
+  Legacy alias for `category`
+
+- `status`  
+  Filter by one or more comma-separated statuses
+
+- `show_filters`  
+  Show or hide the search/filter UI. Supported values: `true`, `false`. Default: `true`
+
+## Status values by media type
+
+### Books
+
+- `finished`
+- `currently_reading`
+- `want_to_read`
+- `abandoned`
+
+### Movies
+
+- `watched`
+- `want_to_watch`
+- `abandoned`
+
+### Music
+
+- `listened`
+- `currently_listening`
+- `want_to_listen`
+
+### Games
+
+- `completed`
+- `playing`
+- `want_to_play`
+- `abandoned`
+
+## Admin Pages
+
+The plugin adds these WordPress admin screens:
+
+- `Media Reviews > All Media`
+- `Media Reviews > Add New`
+- `Media Reviews > Shortcode Generator`
+- `Media Reviews > Import/Export`
+
+## Import and Export
+
+### Export
+
+Export downloads all stored entries as CSV.
+
+Current export columns:
+
+```text
+ID,Media Type,Title,Creator,Rating,Category,Status,Completion Date,Review,Cover Image URL,Date Added
+```
+
+### Import
+
+The importer supports both:
+
+- The current multi-media CSV format
+- The older book-only CSV format
+
+Required data for a valid row:
+
+- Title
+- Creator (or Author in old format)
+- Rating
+
+Ratings must be between `0` and `5`.
+
+## Data Storage
+
+Database table:
+
+```text
+{prefix}_book_reviews
+```
+
+Current schema fields:
+
+| Field | Description |
+| --- | --- |
+| `id` | Primary key |
+| `media_type` | `book`, `movie`, `music`, or `game` |
+| `title` | Media title |
+| `creator` | Author, director, artist, or developer |
+| `rating` | Integer from 0 to 5 |
+| `review_text` | Review content |
+| `cover_image_url` | Cover/poster/artwork URL |
+| `category` | Category or genre |
+| `status` | Media-specific status |
+| `completion_date` | Related date for the item |
+| `date_added` | Timestamp when the row was created |
+
+## Backward Compatibility
+
+Version `3.0.0` includes migration logic for older installations. It supports older data structures and naming, including:
+
+- `author` -> `creator`
+- `genre` -> `category`
+- `reading_status` -> `status`
+- `date_read` -> `completion_date`
+- `[book_reviews]` shortcode -> `[media_reviews]`
 
 ## Requirements
 
@@ -142,24 +233,29 @@ Your visitors can now search, filter, and sort your book collection.
 
 ## Changelog
 
+### 3.0.0
+
+- Expanded from book reviews to multi-media reviews
+- Added support for books, movies, music albums, and games
+- Added media-type-aware admin forms and statuses
+- Added `[media_reviews]` shortcode
+- Kept backward compatibility for old shortcodes and old data formats
+
 ### 2.0.0
-- Frontend display with shortcode
-- Search and filtering
-- Import/Export
-- Genre and status tracking
-- Grid/list view toggle
-- Database migration from v1.0
+
+- Added frontend shortcode display
+- Added search, filtering, and sorting
+- Added CSV import/export
+- Added genre/category and reading status support
 
 ### 1.0.0
-- Initial release
-- Admin CRUD interface
-- Star ratings
-- Image uploads
 
-## Support
+- Initial book review management features
 
-Enable WP_DEBUG for detailed error messages.
-Check browser console for JavaScript issues.
+## Notes
+
+- The plugin name in WordPress is **Media Reviews**.
+- Some internal filenames still use the older `book_reviews` naming for backward compatibility.
 
 ## License
 

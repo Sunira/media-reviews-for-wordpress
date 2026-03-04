@@ -164,20 +164,20 @@ tailwind.config = {
     <!-- Filters and Search -->
     <?php if ($show_filters): ?>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
-        <div class="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
+        <div class="flex flex-col sm:flex-row gap-3 items-stretch">
             <!-- Search -->
             <div class="flex-1">
-                <input type="text" 
-                       class="w-full px-4 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent text-sm book-search-input" 
+                <input type="text"
+                       class="w-full h-10 px-4 py-2 border border-stone-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-stone-400 text-sm book-search-input"
                        data-instance="<?php echo esc_attr($instance_id); ?>"
                        placeholder="Search by title or creator...">
             </div>
-            
+
             <!-- Filters -->
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-3">
                 <!-- Media Type Filter -->
                 <?php if (count($media_types_in_db) > 1): ?>
-                <select class="px-4 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-400 text-sm bg-white book-filter media-type-filter" data-instance="<?php echo esc_attr($instance_id); ?>">
+                <select class="h-10 px-4 py-2 border border-stone-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-stone-400 text-sm book-filter media-type-filter" data-instance="<?php echo esc_attr($instance_id); ?>">
                     <option value="">All Types</option>
                     <?php foreach ($media_types_in_db as $type): ?>
                         <option value="<?php echo esc_attr($type); ?>">
@@ -186,25 +186,25 @@ tailwind.config = {
                     <?php endforeach; ?>
                 </select>
                 <?php endif; ?>
-                
+
                 <!-- Category Filter -->
-                <select class="px-4 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-400 text-sm bg-white book-filter genre-filter" data-instance="<?php echo esc_attr($instance_id); ?>">
+                <select class="h-10 px-4 py-2 border border-stone-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-stone-400 text-sm book-filter genre-filter" data-instance="<?php echo esc_attr($instance_id); ?>">
                     <option value="">All Categories</option>
                     <?php foreach ($categories as $category): ?>
                         <option value="<?php echo esc_attr($category); ?>"><?php echo esc_html($category); ?></option>
                     <?php endforeach; ?>
                 </select>
-                
+
                 <!-- Status Filter -->
-                <select class="px-4 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-400 text-sm bg-white book-filter status-filter" data-instance="<?php echo esc_attr($instance_id); ?>">
+                <select class="h-10 px-4 py-2 border border-stone-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-stone-400 text-sm book-filter status-filter" data-instance="<?php echo esc_attr($instance_id); ?>">
                     <option value="">All Statuses</option>
                     <?php foreach ($all_statuses as $value => $label): ?>
                         <option value="<?php echo esc_attr($value); ?>"><?php echo esc_html($label); ?></option>
                     <?php endforeach; ?>
                 </select>
-                
+
                 <!-- Rating Filter -->
-                <select class="px-4 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-400 text-sm bg-white book-filter rating-filter" data-instance="<?php echo esc_attr($instance_id); ?>">
+                <select class="h-10 px-4 py-2 border border-stone-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-stone-400 text-sm book-filter rating-filter" data-instance="<?php echo esc_attr($instance_id); ?>">
                     <option value="">All Ratings</option>
                     <option value="5">5 Stars</option>
                     <option value="4">4+ Stars</option>
@@ -212,9 +212,9 @@ tailwind.config = {
                     <option value="2">2+ Stars</option>
                     <option value="1">1+ Star</option>
                 </select>
-                
+
                 <!-- Sort -->
-                <select class="px-4 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-400 text-sm bg-white book-sort" data-instance="<?php echo esc_attr($instance_id); ?>">
+                <select class="h-10 px-4 py-2 border border-stone-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-stone-400 text-sm book-sort" data-instance="<?php echo esc_attr($instance_id); ?>">
                     <option value="date-desc">Newest First</option>
                     <option value="date-asc">Oldest First</option>
                     <option value="title-asc">Title (A-Z)</option>
@@ -231,7 +231,7 @@ tailwind.config = {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8" data-instance="<?php echo esc_attr($instance_id); ?>">
         <?php if (empty($items)): ?>
-            <p class="no-books-message">No items found.</p>
+            <p class="no-books-message">No media items found.</p>
         <?php else: ?>
             <?php foreach ($items as $item): 
                 // Support both old and new field names
@@ -257,8 +257,8 @@ tailwind.config = {
                     }
                 }
             ?>
-                <div id="book-card-<?php echo esc_attr($item->id); ?>" 
-                     class="book-card group relative flex flex-col w-full bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 cursor-pointer border border-stone-100" 
+                <div id="book-card-<?php echo esc_attr($item->id); ?>"
+                     class="book-card-container cursor-pointer"
                      data-instance="<?php echo esc_attr($instance_id); ?>"
                      data-item-id="<?php echo esc_attr($item->id); ?>"
                      data-title="<?php echo esc_attr(strtolower($item->title)); ?>"
@@ -268,45 +268,69 @@ tailwind.config = {
                      data-rating="<?php echo esc_attr($item->rating); ?>"
                      data-media-type="<?php echo esc_attr($media_type); ?>"
                      data-date="<?php echo esc_attr($item->date_added); ?>">
-                    
-                    <!-- Image Container -->
-                    <div class="relative aspect-[2/3] w-full overflow-hidden bg-stone-200">
-                        <?php if ($item->cover_image_url): ?>
-                            <img src="<?php echo esc_url($item->cover_image_url); ?>" 
-                                 alt="Cover of <?php echo esc_attr($item->title); ?>"
-                                 class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105">
-                        <?php else: ?>
-                            <div class="h-full w-full flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200">
-                                <span class="text-6xl opacity-30"><?php echo get_media_type_icon($media_type); ?></span>
+
+                    <div class="book-card-inner">
+                        <!-- FRONT: Cover with Rating -->
+                        <div class="book-card-front">
+                            <div class="relative aspect-[2/3] w-full h-full overflow-hidden bg-stone-200">
+                                <?php if ($item->cover_image_url): ?>
+                                    <img src="<?php echo esc_url($item->cover_image_url); ?>"
+                                         alt="Cover of <?php echo esc_attr($item->title); ?>"
+                                         class="h-full w-full object-cover">
+                                <?php else: ?>
+                                    <div class="h-full w-full flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200">
+                                        <span class="text-6xl opacity-30"><?php echo get_media_type_icon($media_type); ?></span>
+                                    </div>
+                                <?php endif; ?>
+
+                                <!-- Rating Badge on Cover -->
+                                <?php if ($item->rating > 0): ?>
+                                    <div class="absolute bottom-3 left-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md shadow-sm">
+                                        <span class="text-xs font-bold text-stone-800"><?php echo intval($item->rating); ?></span>
+                                        <span class="text-xs text-amber-400">★</span>
+                                    </div>
+                                <?php endif; ?>
                             </div>
-                        <?php endif; ?>
-                        
-                        <!-- Gradient Overlay -->
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60"></div>
-                        
-                        <!-- Rating Badge on Cover -->
-                        <?php if ($item->rating > 0): ?>
-                            <div class="absolute bottom-3 left-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md shadow-sm">
-                                <span class="text-xs text-amber-400">★</span>
-                                <span class="text-xs font-bold text-stone-800"><?php echo number_format($item->rating, 1); ?>/5</span>
+                        </div>
+
+                        <!-- BACK: Details -->
+                        <div class="book-card-back">
+                            <div class="flex flex-col h-full p-6 bg-white">
+                                <!-- Title -->
+                                <h3 class="text-lg font-bold text-stone-900 leading-tight mb-2 font-serif"><?php echo esc_html($item->title); ?></h3>
+
+                                <!-- Author/Creator -->
+                                <p class="text-sm text-stone-600 mb-3"><?php echo esc_html($creator); ?></p>
+
+                                <!-- Stars -->
+                                <?php if ($item->rating > 0): ?>
+                                    <div class="flex items-center gap-1 mb-3">
+                                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                                            <span class="text-lg <?php echo $i <= $item->rating ? 'text-amber-400' : 'text-stone-300'; ?>">★</span>
+                                        <?php endfor; ?>
+                                    </div>
+                                <?php endif; ?>
+
+                                <!-- Review Text -->
+                                <?php if ($item->review_text && trim($item->review_text)): ?>
+                                    <div class="flex-1 mb-3 overflow-auto">
+                                        <p class="text-sm text-stone-700 leading-relaxed italic font-serif line-clamp-6">
+                                            "<?php echo esc_html($item->review_text); ?>"
+                                        </p>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="flex-1 mb-3"></div>
+                                <?php endif; ?>
+
+                                <!-- Media Type -->
+                                <div class="mt-auto pt-3 border-t border-stone-200">
+                                    <div class="flex items-center gap-2 text-xs text-stone-600">
+                                        <span><?php echo get_media_type_icon($media_type); ?></span>
+                                        <span class="font-medium"><?php echo esc_html(get_media_type_label($media_type)); ?></span>
+                                    </div>
+                                </div>
                             </div>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <!-- Content -->
-                    <div class="flex flex-col p-5">
-                        <h3 class="text-base font-bold text-stone-900 leading-tight mb-1 font-serif"><?php echo esc_html($item->title); ?></h3>
-                        <p class="text-xs text-stone-500 font-medium mb-2"><?php echo esc_html($creator); ?></p>
-                        
-                        <!-- Genre Badge -->
-                        <?php if (!empty($category)): 
-                            $category_items = array_map('trim', explode(',', $category));
-                            $first_genre = $category_items[0];
-                        ?>
-                            <span class="inline-block text-xs text-stone-600 bg-stone-100 px-2 py-1 rounded-md w-fit">
-                                <?php echo esc_html($first_genre); ?>
-                            </span>
-                        <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             <?php endforeach; ?>

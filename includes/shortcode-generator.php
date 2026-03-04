@@ -9,12 +9,12 @@ $table_name = $wpdb->prefix . 'book_reviews';
 ?>
 
 <div class="wrap">
-    <h1 class="wp-heading-inline">📚 Shortcode Generator</h1>
+    <h1 class="wp-heading-inline">Shortcode Generator</h1>
     <hr class="wp-header-end">
 
     <div style="margin-top: 20px;">
         <p class="description" style="font-size: 14px; margin-bottom: 30px;">
-            Configure your shortcode options below and copy the generated code to display your books on any page or post.
+            Configure your shortcode options below and copy the generated code to display your media reviews on any page or post.
         </p>
 
         <!-- Interactive Shortcode Generator -->
@@ -60,24 +60,24 @@ $table_name = $wpdb->prefix . 'book_reviews';
                     <!-- Limit Option -->
                     <div style="margin-bottom: 20px;">
                         <label style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px;">
-                            Number of Books:
+                            Number of Items:
                         </label>
                         <input type="number" 
                                id="sc-limit" 
                                class="regular-text"
-                               placeholder="All books"
+                               placeholder="All items"
                                min="1"
                                style="width: 100%; padding: 8px; border: 1px solid #8c8f94; border-radius: 4px;">
-                        <p class="description" style="margin: 8px 0 0;">Leave empty to show all books</p>
+                        <p class="description" style="margin: 8px 0 0;">Leave empty to show all items</p>
                     </div>
 
                     <!-- Genre Option -->
                     <div style="margin-bottom: 20px;">
                         <label style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px;">
-                            Filter by Genre:
+                            Filter by Category:
                         </label>
                         <select id="sc-genre" class="regular-text" style="width: 100%; padding: 8px; border: 1px solid #8c8f94; border-radius: 4px;">
-                            <option value="">All Genres</option>
+                            <option value="">All Categories</option>
                             <?php
                             // Get unique genres
                             $all_genres_raw = $wpdb->get_col("SELECT DISTINCT genre FROM $table_name WHERE genre IS NOT NULL AND genre != '' ORDER BY genre");
@@ -98,7 +98,7 @@ $table_name = $wpdb->prefix . 'book_reviews';
                                 <option value="<?php echo esc_attr($genre); ?>"><?php echo esc_html($genre); ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <p class="description" style="margin: 8px 0 0;">Show only books from this genre</p>
+                        <p class="description" style="margin: 8px 0 0;">Show only items from this category</p>
                     </div>
 
                     <!-- Status Option -->
@@ -129,7 +129,7 @@ $table_name = $wpdb->prefix . 'book_reviews';
                             <option value="true">Yes (Show controls)</option>
                             <option value="false">No (Hide controls)</option>
                         </select>
-                        <p class="description" style="margin: 8px 0 0;">Hide search/filters for simple book displays</p>
+                        <p class="description" style="margin: 8px 0 0;">Hide search and filter controls for simpler displays</p>
                     </div>
 
                     <button type="button" 
@@ -149,7 +149,7 @@ $table_name = $wpdb->prefix . 'book_reviews';
                     <div style="background: #1e1e1e; padding: 25px; border-radius: 6px; position: relative; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);">
                         <code id="generated-shortcode" 
                               style="color: #d4d4d4; font-size: 18px; font-family: 'Courier New', Monaco, monospace; word-break: break-all; display: block; line-height: 1.6;">
-                            [book_reviews]
+                            [media_reviews]
                         </code>
                         <button type="button" 
                                 id="copy-shortcode" 
@@ -172,7 +172,7 @@ $table_name = $wpdb->prefix . 'book_reviews';
                             <li>Watch the shortcode update automatically</li>
                             <li>Click the <strong>Copy</strong> button</li>
                             <li>Paste in any <strong>Page</strong> or <strong>Post</strong> editor</li>
-                            <li>Publish and view your books!</li>
+                            <li>Publish and view your media reviews</li>
                         </ol>
                     </div>
 
@@ -226,14 +226,14 @@ $table_name = $wpdb->prefix . 'book_reviews';
                         <tr>
                             <td style="padding: 12px;"><code>limit</code></td>
                             <td style="padding: 12px;">Any number (e.g., 10, 20, 50)</td>
-                            <td style="padding: 12px;">All books</td>
+                            <td style="padding: 12px;">All items</td>
                             <td style="padding: 12px;"><code>limit="10"</code></td>
                         </tr>
                         <tr>
-                            <td style="padding: 12px;"><code>genre</code></td>
-                            <td style="padding: 12px;">Any genre from your books</td>
-                            <td style="padding: 12px;">All genres</td>
-                            <td style="padding: 12px;"><code>genre="Fiction"</code></td>
+                            <td style="padding: 12px;"><code>category</code></td>
+                            <td style="padding: 12px;">Any category from your media library</td>
+                            <td style="padding: 12px;">All categories</td>
+                            <td style="padding: 12px;"><code>category="Fiction"</code></td>
                         </tr>
                         <tr>
                             <td style="padding: 12px;"><code>status</code></td>
@@ -253,9 +253,9 @@ $table_name = $wpdb->prefix . 'book_reviews';
                 <div style="margin-top: 20px; padding: 15px; background: #fffbf0; border-left: 3px solid #f0b429; border-radius: 3px;">
                     <strong style="display: block; margin-bottom: 8px;">💡 Pro Tips:</strong>
                     <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
-                        <li>Create multiple pages with different shortcodes (e.g., "Currently Reading", "Want to Read", "Sci-Fi Books")</li>
-                        <li><strong>Multiple statuses:</strong> Use comma-separated values like <code>status="finished,abandoned"</code> to show books from multiple reading statuses</li>
-                        <li>Combine filters to create specific collections (e.g., "Finished Sci-Fi books")</li>
+                        <li>Create multiple pages with different shortcodes for different collections and statuses.</li>
+                        <li><strong>Multiple statuses:</strong> Use comma-separated values like <code>status="finished,abandoned"</code> to show multiple status groups in one view.</li>
+                        <li>Combine media type, category, and status filters to create focused collections.</li>
                         <li>Use <code>show_filters="false"</code> for clean, simple displays without search/filter controls</li>
                     </ul>
                 </div>
