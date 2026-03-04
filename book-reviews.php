@@ -65,45 +65,45 @@ register_activation_hook(__FILE__, 'book_reviews_activate');
 function book_reviews_migrate_to_3_0() {
     global $wpdb;
     $table_name = $wpdb->prefix . 'book_reviews';
-    
+
     // Add media_type column if it doesn't exist
-    $row = $wpdb->get_results("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE table_name = '$table_name' AND column_name = 'media_type'");
-    
+    $row = $wpdb->get_results($wpdb->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE table_name = %s AND column_name = 'media_type'", $table_name));
+
     if(empty($row)) {
-        $wpdb->query("ALTER TABLE $table_name ADD media_type varchar(20) DEFAULT 'book' NOT NULL AFTER id");
+        $wpdb->query($wpdb->prepare("ALTER TABLE %i ADD media_type varchar(20) DEFAULT 'book' NOT NULL AFTER id", $table_name));
     }
-    
+
     // Rename author to creator if needed
-    $row = $wpdb->get_results("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE table_name = '$table_name' AND column_name = 'author'");
-    
+    $row = $wpdb->get_results($wpdb->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE table_name = %s AND column_name = 'author'", $table_name));
+
     if(!empty($row)) {
-        $wpdb->query("ALTER TABLE $table_name CHANGE author creator varchar(255) NOT NULL");
+        $wpdb->query($wpdb->prepare("ALTER TABLE %i CHANGE author creator varchar(255) NOT NULL", $table_name));
     }
-    
+
     // Rename genre to category if needed
-    $row = $wpdb->get_results("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE table_name = '$table_name' AND column_name = 'genre'");
-    
+    $row = $wpdb->get_results($wpdb->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE table_name = %s AND column_name = 'genre'", $table_name));
+
     if(!empty($row)) {
-        $wpdb->query("ALTER TABLE $table_name CHANGE genre category varchar(100)");
+        $wpdb->query($wpdb->prepare("ALTER TABLE %i CHANGE genre category varchar(100)", $table_name));
     }
-    
+
     // Rename reading_status to status if needed
-    $row = $wpdb->get_results("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE table_name = '$table_name' AND column_name = 'reading_status'");
-    
+    $row = $wpdb->get_results($wpdb->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE table_name = %s AND column_name = 'reading_status'", $table_name));
+
     if(!empty($row)) {
-        $wpdb->query("ALTER TABLE $table_name CHANGE reading_status status varchar(20) DEFAULT 'finished'");
+        $wpdb->query($wpdb->prepare("ALTER TABLE %i CHANGE reading_status status varchar(20) DEFAULT 'finished'", $table_name));
     }
-    
+
     // Rename date_read to completion_date if needed
-    $row = $wpdb->get_results("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE table_name = '$table_name' AND column_name = 'date_read'");
-    
+    $row = $wpdb->get_results($wpdb->prepare("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE table_name = %s AND column_name = 'date_read'", $table_name));
+
     if(!empty($row)) {
-        $wpdb->query("ALTER TABLE $table_name CHANGE date_read completion_date date");
+        $wpdb->query($wpdb->prepare("ALTER TABLE %i CHANGE date_read completion_date date", $table_name));
     }
 }
 
