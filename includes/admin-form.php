@@ -7,6 +7,12 @@ if (!defined('ABSPATH')) {
 global $wpdb;
 $table_name = $wpdb->prefix . 'book_reviews';
 
+$allowed_media_types = array('book', 'movie', 'music', 'game');
+$amazon_prefill = null;
+$amazon_prefill_key = isset($_GET['amazon_prefill']) ? sanitize_key(wp_unslash($_GET['amazon_prefill'])) : '';
+$amazon_source_url = '';
+$show_amazon_notice = false;
+
 // Get media item data if editing
 $item = null;
 $is_edit = false;
@@ -16,18 +22,64 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
     $is_edit = true;
 }
 
+if (!$is_edit && !empty($amazon_prefill_key)) {
+    $amazon_prefill = get_transient('book_reviews_amazon_prefill_' . $amazon_prefill_key);
+    if (is_array($amazon_prefill)) {
+        $show_amazon_notice = true;
+        $amazon_source_url = !empty($amazon_prefill['source_url']) ? esc_url_raw($amazon_prefill['source_url']) : '';
+    }
+}
+
+$form_values = array(
+    'media_type' => $item->media_type ?? 'book',
+    'title' => $item->title ?? '',
+    'creator' => $item->creator ?? $item->author ?? '',
+    'rating' => isset($item->rating) ? intval($item->rating) : 0,
+    'review_text' => $item->review_text ?? '',
+    'cover_image_url' => $item->cover_image_url ?? '',
+    'category' => $item->category ?? $item->genre ?? '',
+    'status' => $item->status ?? $item->reading_status ?? 'finished',
+    'completion_date' => $item->completion_date ?? $item->date_read ?? '',
+    'source_url' => $amazon_source_url,
+);
+
+if ($amazon_prefill) {
+    $form_values['media_type'] = in_array($amazon_prefill['media_type'], $allowed_media_types, true) ? $amazon_prefill['media_type'] : 'book';
+    $form_values['title'] = $amazon_prefill['title'] ?? '';
+    $form_values['creator'] = $amazon_prefill['creator'] ?? '';
+    $form_values['cover_image_url'] = $amazon_prefill['cover_image_url'] ?? '';
+    $form_values['source_url'] = $amazon_source_url;
+}
+
 // Handle form submission
 if (isset($_POST['book_reviews_submit']) && wp_verify_nonce($_POST['book_reviews_nonce'], 'book_reviews_save')) {
     // Use wp_unslash to remove any magic quotes slashes before sanitizing
-    $media_type = sanitize_text_field(wp_unslash($_POST['media_type']));
-    $title = sanitize_text_field(wp_unslash($_POST['title']));
-    $creator = sanitize_text_field(wp_unslash($_POST['creator']));
-    $rating = intval($_POST['rating']);
-    $review_text = sanitize_textarea_field(wp_unslash($_POST['review_text']));
-    $cover_image_url = esc_url_raw($_POST['cover_image_url']);
-    $category = sanitize_text_field(wp_unslash($_POST['category']));
-    $status = sanitize_text_field(wp_unslash($_POST['status']));
+    $media_type = isset($_POST['media_type']) ? sanitize_text_field(wp_unslash($_POST['media_type'])) : 'book';
+    $title = isset($_POST['title']) ? sanitize_text_field(wp_unslash($_POST['title'])) : '';
+    $creator = isset($_POST['creator']) ? sanitize_text_field(wp_unslash($_POST['creator'])) : '';
+    $rating = isset($_POST['rating']) ? intval($_POST['rating']) : 0;
+    $review_text = isset($_POST['review_text']) ? sanitize_textarea_field(wp_unslash($_POST['review_text'])) : '';
+    $cover_image_url = isset($_POST['cover_image_url']) ? esc_url_raw(wp_unslash($_POST['cover_image_url'])) : '';
+    $category = isset($_POST['category']) ? sanitize_text_field(wp_unslash($_POST['category'])) : '';
+    $status = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : 'finished';
     $completion_date = !empty($_POST['completion_date']) ? sanitize_text_field(wp_unslash($_POST['completion_date'])) : null;
+    $amazon_source_url = isset($_POST['amazon_source_url']) ? esc_url_raw(wp_unslash($_POST['amazon_source_url'])) : $amazon_source_url;
+    $show_amazon_notice = !empty($_POST['amazon_imported']);
+    $amazon_prefill_key = isset($_POST['amazon_prefill_key']) ? sanitize_key(wp_unslash($_POST['amazon_prefill_key'])) : $amazon_prefill_key;
+
+    $form_values = array(
+        'media_type' => in_array($media_type, $allowed_media_types, true) ? $media_type : 'book',
+        'title' => $title,
+        'creator' => $creator,
+        'rating' => $rating,
+        'review_text' => $review_text,
+        'cover_image_url' => $cover_image_url,
+        'category' => $category,
+        'status' => $status,
+        'completion_date' => $completion_date,
+        'source_url' => $amazon_source_url,
+    );
+    $media_type = $form_values['media_type'];
 
     // Validate
     if (empty($title) || empty($creator) || $rating < 0 || $rating > 5) {
@@ -50,12 +102,18 @@ if (isset($_POST['book_reviews_submit']) && wp_verify_nonce($_POST['book_reviews
         if ($is_edit && $item) {
             // Update existing item
             $wpdb->update($table_name, $data, array('id' => $item->id), $format, array('%d'));
+            if (!empty($amazon_prefill_key)) {
+                delete_transient('book_reviews_amazon_prefill_' . $amazon_prefill_key);
+            }
             echo '<div class="notice notice-success is-dismissible"><p>Media item updated successfully! <a href="' . admin_url('admin.php?page=book-reviews') . '">View all items</a></p></div>';
             // Refresh item data
             $item = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $item->id));
         } else {
             // Insert new item
             $wpdb->insert($table_name, $data, $format);
+            if (!empty($amazon_prefill_key)) {
+                delete_transient('book_reviews_amazon_prefill_' . $amazon_prefill_key);
+            }
             echo '<div class="notice notice-success is-dismissible"><p>Media item added successfully! <a href="' . admin_url('admin.php?page=book-reviews') . '">View all items</a></p></div>';
             
             // Clear form by redirecting
@@ -66,28 +124,22 @@ if (isset($_POST['book_reviews_submit']) && wp_verify_nonce($_POST['book_reviews
     }
 }
 
-// Default values for new items
-$default_media_type = 'book';
-$default_creator = '';
-$default_category = '';
-$default_status = 'finished';
-$default_completion_date = '';
-
-// Use item values if editing
-if ($item) {
-    $default_media_type = $item->media_type ?? 'book';
-    $default_creator = $item->creator ?? '';
-    $default_category = $item->category ?? '';
-    $default_status = $item->status ?? 'finished';
-    $default_completion_date = $item->completion_date ?? '';
-}
 ?>
 
 <div class="wrap">
     <h1><?php echo $is_edit ? 'Edit Media Item' : 'Add New Media Item'; ?></h1>
+
+    <?php if ($show_amazon_notice): ?>
+        <div class="notice notice-info">
+            <p><strong>Imported from Amazon.</strong> Review the prefilled fields before saving.</p>
+        </div>
+    <?php endif; ?>
     
     <form method="post" action="">
         <?php wp_nonce_field('book_reviews_save', 'book_reviews_nonce'); ?>
+        <input type="hidden" name="amazon_prefill_key" value="<?php echo esc_attr($amazon_prefill_key); ?>">
+        <input type="hidden" name="amazon_imported" value="<?php echo $show_amazon_notice ? '1' : '0'; ?>">
+        <input type="hidden" name="amazon_source_url" value="<?php echo esc_attr($form_values['source_url']); ?>">
         
         <!-- Modern Card Design -->
         <div style="background: white; border: 1px solid #c3c4c7; box-shadow: 0 1px 1px rgba(0,0,0,.04); border-radius: 4px; padding: 30px; margin-top: 20px; max-width: 900px;">
@@ -103,10 +155,10 @@ if ($item) {
                         id="media-type" 
                         required
                         style="width: 100%; max-width: 300px; padding: 10px 12px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 14px;">
-                    <option value="book" <?php selected($default_media_type, 'book'); ?>>📚 Book</option>
-                    <option value="movie" <?php selected($default_media_type, 'movie'); ?>>🎬 Movie</option>
-                    <option value="music" <?php selected($default_media_type, 'music'); ?>>🎵 Music Album</option>
-                    <option value="game" <?php selected($default_media_type, 'game'); ?>>🎮 Video Game</option>
+                    <option value="book" <?php selected($form_values['media_type'], 'book'); ?>>📚 Book</option>
+                    <option value="movie" <?php selected($form_values['media_type'], 'movie'); ?>>🎬 Movie</option>
+                    <option value="music" <?php selected($form_values['media_type'], 'music'); ?>>🎵 Music Album</option>
+                    <option value="game" <?php selected($form_values['media_type'], 'game'); ?>>🎮 Video Game</option>
                 </select>
             </div>
             
@@ -125,7 +177,7 @@ if ($item) {
                     <input type="text" 
                            name="title" 
                            id="title" 
-                           value="<?php echo $item ? esc_attr($item->title) : ''; ?>" 
+                           value="<?php echo esc_attr($form_values['title']); ?>" 
                            required
                            style="width: 100%; padding: 10px 12px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 14px;">
                     <p style="margin: 8px 0 0; font-size: 13px; color: #646970;">The title of the <span class="media-type-name">book</span></p>
@@ -139,7 +191,7 @@ if ($item) {
                     <input type="text" 
                            name="creator" 
                            id="creator" 
-                           value="<?php echo esc_attr($default_creator); ?>" 
+                           value="<?php echo esc_attr($form_values['creator']); ?>" 
                            required
                            style="width: 100%; padding: 10px 12px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 14px;">
                     <p style="margin: 8px 0 0; font-size: 13px; color: #646970;" id="creator-help">The author of the book</p>
@@ -153,10 +205,27 @@ if ($item) {
                     <input type="text" 
                            name="category" 
                            id="category" 
-                           value="<?php echo esc_attr($default_category); ?>"
+                           value="<?php echo esc_attr($form_values['category']); ?>"
                            style="width: 100%; padding: 10px 12px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 14px;">
                     <p style="margin: 8px 0 0; font-size: 13px; color: #646970;" id="category-help">e.g., Fiction, Non-Fiction, Mystery</p>
                 </div>
+
+                <?php if (!empty($form_values['source_url'])): ?>
+                    <div style="margin-bottom: 20px;">
+                        <label for="amazon-source-url-display" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #1d2327;">
+                            Amazon Source URL
+                        </label>
+                        <input type="url"
+                               id="amazon-source-url-display"
+                               value="<?php echo esc_attr($form_values['source_url']); ?>"
+                               readonly
+                               style="width: 100%; padding: 10px 12px; border: 1px solid #dcdcde; border-radius: 4px; font-size: 14px; background: #f6f7f7;">
+                        <p style="margin: 8px 0 0; font-size: 13px; color: #646970;">
+                            Imported for reference only and not stored with the media item.
+                            <a href="<?php echo esc_url($form_values['source_url']); ?>" target="_blank" rel="noopener noreferrer">Open source page</a>
+                        </p>
+                    </div>
+                <?php endif; ?>
                 
                 <!-- Cover Image URL -->
                 <div>
@@ -166,8 +235,8 @@ if ($item) {
                     
                     <!-- Image Preview -->
                     <div id="cover-image-preview" style="margin-bottom: 10px;">
-                        <?php if ($item && !empty($item->cover_image_url)): ?>
-                            <img src="<?php echo esc_url($item->cover_image_url); ?>" 
+                        <?php if (!empty($form_values['cover_image_url'])): ?>
+                            <img src="<?php echo esc_url($form_values['cover_image_url']); ?>" 
                                  style="max-width: 200px; height: auto; display: block; border: 1px solid #dcdcde; border-radius: 4px;">
                         <?php endif; ?>
                     </div>
@@ -177,10 +246,10 @@ if ($item) {
                             id="upload-cover-button" 
                             class="button"
                             style="margin-bottom: 10px;">
-                        <?php echo ($item && !empty($item->cover_image_url)) ? '🖼️ Change Image' : '📁 Upload Image'; ?>
+                        <?php echo !empty($form_values['cover_image_url']) ? '🖼️ Change Image' : '📁 Upload Image'; ?>
                     </button>
                     
-                    <?php if ($item && !empty($item->cover_image_url)): ?>
+                    <?php if (!empty($form_values['cover_image_url'])): ?>
                         <button type="button" id="remove-cover-button" class="button" style="margin-left: 5px;">Remove Image</button>
                     <?php endif; ?>
                     
@@ -188,7 +257,7 @@ if ($item) {
                     <input type="hidden" 
                            name="cover_image_url" 
                            id="cover_image_url" 
-                           value="<?php echo $item ? esc_attr($item->cover_image_url) : ''; ?>">
+                           value="<?php echo esc_attr($form_values['cover_image_url']); ?>">
                     
                     <p style="margin: 8px 0 0; font-size: 13px; color: #646970;" id="cover-help">Click "Upload Image" to choose from your media library or upload a new image</p>
                 </div>
@@ -208,7 +277,7 @@ if ($item) {
                             Rating <span style="color: #d63638;">*</span>
                         </label>
                         <div class="rating-selector" style="display: flex; align-items: center; gap: 4px;">
-                            <?php $current_rating = $item ? $item->rating : 0; ?>
+                            <?php $current_rating = intval($form_values['rating']); ?>
                             <!-- Hidden 0-rating option -->
                             <input type="radio" 
                                    name="rating" 
@@ -254,7 +323,7 @@ if ($item) {
                     <input type="date" 
                            name="completion_date" 
                            id="completion_date" 
-                           value="<?php echo esc_attr($default_completion_date); ?>"
+                           value="<?php echo esc_attr($form_values['completion_date']); ?>"
                            style="width: 100%; max-width: 300px; padding: 10px 12px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 14px;">
                     <p style="margin: 8px 0 0; font-size: 13px; color: #646970;" id="date-description">When you finished reading</p>
                 </div>
@@ -270,7 +339,7 @@ if ($item) {
                 <textarea name="review_text" 
                           id="review_text" 
                           rows="8"
-                          style="width: 100%; padding: 12px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif; resize: vertical;"><?php echo $item ? esc_textarea($item->review_text) : ''; ?></textarea>
+                          style="width: 100%; padding: 12px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif; resize: vertical;"><?php echo esc_textarea($form_values['review_text']); ?></textarea>
                 <p style="margin: 8px 0 0; font-size: 13px; color: #646970;">Share your thoughts, opinions, and what you liked or didn't like</p>
             </div>
             
@@ -447,7 +516,7 @@ jQuery(document).ready(function($) {
     
     // Initialize form based on current media type
     const currentMediaType = $('#media-type').val();
-    const currentStatus = '<?php echo esc_js($default_status); ?>';
+    const currentStatus = '<?php echo esc_js($form_values['status']); ?>';
     updateFormForMediaType(currentMediaType, currentStatus);
     
     // Handle media type change

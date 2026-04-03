@@ -3,7 +3,7 @@
  * Plugin Name: Media Reviews
  * Plugin URI: https://unbrokenhorse.com/media-reviews
  * Description: A WordPress plugin to manage and display reviews for books, movies, music albums, and video games with ratings
- * Version: 3.0.0
+ * Version: 3.1.0
  * Author: UnbrokenHorse.com
  * Author URI: https://unbrokenhorse.com
  * License: GPL v2 or later
@@ -17,9 +17,11 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('BOOK_REVIEWS_VERSION', '3.0.0');
+define('BOOK_REVIEWS_VERSION', '3.1.0');
 define('BOOK_REVIEWS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('BOOK_REVIEWS_PLUGIN_URL', plugin_dir_url(__FILE__));
+
+require_once BOOK_REVIEWS_PLUGIN_DIR . 'includes/amazon-import.php';
 
 /**
  * Activation hook - creates database table
@@ -164,6 +166,15 @@ function book_reviews_admin_menu() {
         'manage_options',
         'book-reviews-import-export',
         'book_reviews_import_export_page'
+    );
+
+    add_submenu_page(
+        'book-reviews',
+        'Amazon Bookmarklet',
+        'Amazon Bookmarklet',
+        'manage_options',
+        'book-reviews-amazon',
+        'book_reviews_amazon_import_page'
     );
 }
 add_action('admin_menu', 'book_reviews_admin_menu');

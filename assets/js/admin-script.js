@@ -1,4 +1,30 @@
 jQuery(document).ready(function($) {
+    $('[data-copy-target]').on('click', async function(e) {
+        e.preventDefault();
+
+        const selector = $(this).data('copyTarget');
+        const $target = $(selector);
+        if ($target.length === 0) {
+            return;
+        }
+
+        const text = $target.val() || $target.text();
+        if (!text) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(text);
+            const originalText = $(this).text();
+            $(this).text('Copied');
+
+            window.setTimeout(() => {
+                $(this).text(originalText);
+            }, 1500);
+        } catch (error) {
+            window.alert('Copy failed. Please copy the bookmarklet code manually.');
+        }
+    });
     
     // Media uploader for cover image
     let mediaUploader;
