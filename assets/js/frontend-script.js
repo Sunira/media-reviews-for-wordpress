@@ -1,9 +1,5 @@
 // Vanilla JavaScript - No jQuery!
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Media Reviews plugin frontend loaded');
-    console.log('Total containers:', document.querySelectorAll('[data-view]').length);
-    console.log('Total cards:', document.querySelectorAll('.book-card').length);
-    
     // Media type configuration
     const mediaConfig = {
         book: {
@@ -25,12 +21,11 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     // Initialize each media reviews instance
-    document.querySelectorAll('[data-view]').forEach(container => {
+    document.querySelectorAll('[data-book-reviews-instance], [data-view]').forEach(container => {
         const instanceId = container.id;
         
-        // Get all cards for this instance
-        function getCards() {
-            return container.querySelectorAll('.book-card-container');
+        function getItems() {
+            return container.querySelectorAll('.book-review-item');
         }
         
         // Filter items based on current filter values
@@ -44,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let visibleCount = 0;
             
-            getCards().forEach(card => {
+            getItems().forEach(card => {
                 const title = card.dataset.title || '';
                 const creator = card.dataset.creator || '';
                 const category = card.dataset.category || '';
@@ -97,7 +92,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Show/hide no results message
-            const grid = container.querySelector('.grid');
+            const grid = container.querySelector('.book-reviews-items, .grid');
+            if (!grid) {
+                return;
+            }
             let noResults = grid.querySelector('.no-results-message');
             
             if (visibleCount === 0) {
@@ -116,8 +114,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Sort items
         function sortBooks(sortBy) {
-            const grid = container.querySelector('.grid');
-            const cards = Array.from(getCards());
+            const grid = container.querySelector('.book-reviews-items, .grid');
+            if (!grid) {
+                return;
+            }
+
+            const cards = Array.from(getItems());
             
             cards.sort((a, b) => {
                 switch(sortBy) {
@@ -161,33 +163,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Modal functionality - works across all instances
     function openModal(instanceId, itemId) {
-        console.log('openModal called:', { instanceId, itemId });
-        
         if (!window.bookReviewsData || !window.bookReviewsData[instanceId]) {
-            console.error('No data found for instance:', instanceId);
             return;
         }
-        
-        console.log('Searching for item ID:', itemId, 'Type:', typeof itemId);
-        console.log('Available items:', window.bookReviewsData[instanceId].map(item => ({
-            id: item.id,
-            idType: typeof item.id,
-            title: item.title
-        })));
-        
+
         const itemData = window.bookReviewsData[instanceId].find(item => {
-            console.log('Comparing:', item.id, '('+typeof item.id+')', '==', itemId, '('+typeof itemId+')', '=', item.id == itemId);
             return item.id == itemId;
         });
         
         if (!itemData) {
-            console.error('❌ Item data not found for id:', itemId);
-            console.error('Available IDs:', window.bookReviewsData[instanceId].map(i => i.id));
             return;
         }
-        
-        console.log('✅ Item data found:', itemData);
-        
+
         const mediaType = itemData.media_type || 'book';
         const config = mediaConfig[mediaType] || mediaConfig.book;
         
@@ -276,13 +263,9 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.style.justifyContent = 'center';
         document.body.style.overflow = 'hidden';
         
-        console.log('✅ Modal should now be visible');
-        console.log('Modal display:', window.getComputedStyle(modal).display);
-        console.log('Modal position:', window.getComputedStyle(modal).position);
     }
     
     function closeModal(instanceId) {
-        console.log('Closing modal:', instanceId);
         const modal = document.getElementById(`modal-${instanceId}`);
         if (modal) {
             modal.classList.remove('flex');
@@ -294,13 +277,46 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Card click handler - toggle flip
     document.addEventListener('click', (e) => {
+        if (e.target.closest('.book-card-review-scroll')) {
+            return;
+        }
+
         const card = e.target.closest('.book-card-container');
         if (card) {
             e.preventDefault();
             card.classList.toggle('flipped');
-            console.log('Card flipped:', card.classList.contains('flipped'));
+            return;
+        }
+
+        const listItem = e.target.closest('.book-list-item');
+        if (listItem && !e.target.closest('a, button, input, select, textarea')) {
+            const instanceId = listItem.dataset.instance;
+            const itemId = listItem.dataset.itemId;
+            openModal(instanceId, itemId);
         }
     });
+
+    document.addEventListener('wheel', (e) => {
+        const scrollZone = e.target.closest('.book-card-review-scroll');
+        if (!scrollZone) {
+            return;
+        }
+
+        const canScroll = scrollZone.scrollHeight > scrollZone.clientHeight;
+        if (!canScroll) {
+            return;
+        }
+
+        const maxScrollTop = scrollZone.scrollHeight - scrollZone.clientHeight;
+        const nextScrollTop = Math.max(0, Math.min(scrollZone.scrollTop + e.deltaY, maxScrollTop));
+
+        if (nextScrollTop !== scrollZone.scrollTop) {
+            scrollZone.scrollTop = nextScrollTop;
+            e.preventDefault();
+        }
+
+        e.stopPropagation();
+    }, { passive: false });
     
     // Close button click
     document.addEventListener('click', (e) => {

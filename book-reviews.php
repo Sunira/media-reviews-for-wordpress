@@ -3,7 +3,7 @@
  * Plugin Name: Media Reviews
  * Plugin URI: https://unbrokenhorse.com/media-reviews
  * Description: A WordPress plugin to manage and display reviews for books, movies, music albums, and video games with ratings
- * Version: 3.2.0
+ * Version: 3.3.0
  * Author: UnbrokenHorse.com
  * Author URI: https://unbrokenhorse.com
  * License: GPL v2 or later
@@ -17,11 +17,12 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('BOOK_REVIEWS_VERSION', '3.2.0');
+define('BOOK_REVIEWS_VERSION', '3.3.0');
 define('BOOK_REVIEWS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('BOOK_REVIEWS_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 require_once BOOK_REVIEWS_PLUGIN_DIR . 'includes/amazon-import.php';
+require_once BOOK_REVIEWS_PLUGIN_DIR . 'includes/frontend-helpers.php';
 
 /**
  * Activation hook - creates database table
@@ -329,6 +330,108 @@ function book_reviews_admin_enqueue_scripts($hook) {
 }
 add_action('admin_enqueue_scripts', 'book_reviews_admin_enqueue_scripts');
 
+function book_reviews_register_block_assets() {
+    wp_register_script(
+        'book-reviews-block-editor',
+        BOOK_REVIEWS_PLUGIN_URL . 'assets/js/block-editor.js',
+        array('wp-blocks', 'wp-element', 'wp-components', 'wp-block-editor', 'wp-server-side-render', 'wp-api-fetch'),
+        BOOK_REVIEWS_VERSION,
+        true
+    );
+
+    wp_register_style(
+        'book-reviews-block-editor',
+        BOOK_REVIEWS_PLUGIN_URL . 'assets/css/block-editor.css',
+        array('wp-edit-blocks'),
+        BOOK_REVIEWS_VERSION
+    );
+
+    register_block_type(
+        BOOK_REVIEWS_PLUGIN_DIR . 'blocks/media-reviews',
+        array(
+            'render_callback' => 'book_reviews_render_block',
+        )
+    );
+}
+add_action('init', 'book_reviews_register_block_assets');
+
+function book_reviews_render_block($attributes) {
+    $media_types = array();
+    if (!empty($attributes['mediaTypes']) && is_array($attributes['mediaTypes'])) {
+        $media_types = array_values(array_filter(array_map('sanitize_key', $attributes['mediaTypes'])));
+    }
+
+    return book_reviews_render_media_reviews(
+        array(
+            'mode' => $attributes['mode'] ?? 'collection',
+            'itemId' => !empty($attributes['itemId']) ? absint($attributes['itemId']) : 0,
+            'view' => $attributes['layout'] ?? 'grid',
+            'show_filters' => !empty($attributes['showFilters']),
+            'media_types' => $media_types,
+            'date_preset' => $attributes['datePreset'] ?? 'all',
+            'limit' => isset($attributes['limit']) ? intval($attributes['limit']) : -1,
+            'heading' => $attributes['heading'] ?? '',
+        )
+    );
+}
+
+function book_reviews_register_rest_routes() {
+    register_rest_route(
+        'media-reviews/v1',
+        '/items',
+        array(
+            'methods' => WP_REST_Server::READABLE,
+            'permission_callback' => function() {
+                return current_user_can('manage_options');
+            },
+            'callback' => 'book_reviews_rest_search_items',
+            'args' => array(
+                'search' => array(
+                    'sanitize_callback' => 'sanitize_text_field',
+                ),
+            ),
+        )
+    );
+}
+add_action('rest_api_init', 'book_reviews_register_rest_routes');
+
+function book_reviews_rest_search_items($request) {
+    global $wpdb;
+
+    $search = sanitize_text_field((string) $request->get_param('search'));
+    $table_name = $wpdb->prefix . 'book_reviews';
+
+    if ($search === '') {
+        return rest_ensure_response(array());
+    }
+
+    $like = '%' . $wpdb->esc_like($search) . '%';
+    $sql = $wpdb->prepare(
+        "SELECT id, title, creator, media_type, cover_image_url
+         FROM {$table_name}
+         WHERE title LIKE %s OR creator LIKE %s
+         ORDER BY date_added DESC
+         LIMIT 20",
+        $like,
+        $like
+    );
+
+    $rows = $wpdb->get_results($sql);
+    $results = array();
+
+    foreach ($rows as $row) {
+        $results[] = array(
+            'id' => absint($row->id),
+            'title' => sanitize_text_field($row->title),
+            'creator' => sanitize_text_field($row->creator),
+            'media_type' => sanitize_key($row->media_type),
+            'cover_image_url' => esc_url_raw($row->cover_image_url),
+        );
+    }
+
+    return rest_ensure_response($results);
+}
+
 /**
  * Enqueue frontend styles and scripts
  */
@@ -348,19 +451,7 @@ add_action('wp_enqueue_scripts', 'book_reviews_frontend_enqueue_scripts');
  * Register shortcode for frontend display
  */
 function book_reviews_shortcode($atts) {
-    $atts = shortcode_atts(array(
-        'view' => 'grid',
-        'limit' => -1,
-        'genre' => '',          // Backward compatibility
-        'category' => '',       // New name for genre
-        'status' => '',
-        'show_filters' => 'true',
-        'media_type' => 'all'   // New: filter by media type
-    ), $atts);
-    
-    ob_start();
-    include BOOK_REVIEWS_PLUGIN_DIR . 'includes/frontend-display.php';
-    return ob_get_clean();
+    return book_reviews_render_media_reviews($atts);
 }
 
 // Register both shortcodes for backward compatibility

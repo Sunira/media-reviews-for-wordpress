@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 2,
+  "name": "media-reviews/display",
+  "version": "3.3.0",
+  "title": "Media Reviews",
+  "category": "widgets",
+  "icon": "format-gallery",
+  "description": "Display one media item or a filterable collection from Media Reviews.",
+  "textdomain": "media-reviews",
+  "editorScript": "book-reviews-block-editor",
+  "editorStyle": "book-reviews-block-editor",
+  "style": "book-reviews-frontend",
+  "attributes": {
+    "mode": {
+      "type": "string",
+      "default": "collection"
+    },
+    "itemId": {
+      "type": "number",
+      "default": 0
+    },
+    "layout": {
+      "type": "string",
+      "default": "grid"
+    },
+    "showFilters": {
+      "type": "boolean",
+      "default": true
+    },
+    "mediaTypes": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "datePreset": {
+      "type": "string",
+      "default": "all"
+    },
+    "limit": {
+      "type": "number",
+      "default": -1
+    },
+    "heading": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "supports": {
+    "html": false
+  }
+}

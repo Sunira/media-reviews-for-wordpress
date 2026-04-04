@@ -425,7 +425,7 @@ function book_reviews_fetch_musicbrainz_release_group_details($release_group_id)
 
     $headers = array(
         'Accept' => 'application/json',
-        'User-Agent' => 'MediaReviewsWordPressPlugin/3.2.0',
+        'User-Agent' => 'MediaReviewsWordPressPlugin/3.3.0',
     );
 
     $data = book_reviews_api_request_json($url, $headers);

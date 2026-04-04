@@ -4,11 +4,11 @@ A WordPress plugin for managing and displaying reviews for books, movies, music 
 
 ## Version
 
-Current version: `3.2.0`
+Current version: `3.3.0`
 
 ## Overview
 
-Media Reviews adds a custom admin area in WordPress where you can store review entries with ratings, notes, cover art, categories, statuses, and dates. It also includes frontend shortcodes so you can publish your collection on any page or post.
+Media Reviews adds a custom admin area in WordPress where you can store review entries with ratings, notes, cover art, categories, statuses, and dates. It includes frontend shortcodes and a Gutenberg block so you can publish your collection inside any page or post.
 
 The plugin began as a book review plugin and still keeps backward compatibility with older book-only data and shortcodes.
 
@@ -23,7 +23,7 @@ At a high level, the plugin has three main surfaces:
    The plugin stores media reviews in a custom database table named `{prefix}_book_reviews`. Each row represents one media item with a media type, title, creator, rating, review text, image URL, category, status, and completion date.
 
 3. **Frontend display**
-   The `[media_reviews]` shortcode reads from the custom table and renders a searchable, filterable, sortable media grid or list on the public site. The public display uses only saved WordPress data and image URLs.
+   The `[media_reviews]` shortcode and `Media Reviews` block read from the custom table and render searchable, filterable, sortable media views on the public site. The public display uses only saved WordPress data and image URLs.
 
 ## Project Structure
 
@@ -38,8 +38,8 @@ These are the most important moving parts in the codebase:
 - [includes/admin-list.php](/Users/sunira/Projects/ClaudeCode/book-reviews-plugin/includes/admin-list.php)
   Renders the admin listing table and media-type tabs.
 
-- [includes/frontend-display.php](/Users/sunira/Projects/ClaudeCode/book-reviews-plugin/includes/frontend-display.php)
-  Renders the shortcode output and prepares the frontend item data.
+- [includes/frontend-helpers.php](/Users/sunira/Projects/ClaudeCode/book-reviews-plugin/includes/frontend-helpers.php)
+  Contains the shared query and rendering helpers used by both the shortcode and the Gutenberg block.
 
 - [includes/import-export.php](/Users/sunira/Projects/ClaudeCode/book-reviews-plugin/includes/import-export.php)
   Handles CSV import/export.
@@ -82,7 +82,7 @@ These are the most important moving parts in the codebase:
 
 ### API import flow
 
-1. A user opens **Media Reviews > API Import**
+1. A user opens **Media Reviews > Add New**
 2. The plugin searches public APIs server-side from wp-admin
 3. The user chooses a result to import
 4. The plugin downloads the selected image into the local WordPress Media Library
@@ -132,6 +132,7 @@ Every media item uses the same base storage model, with labels and status values
 
 - Display reviews with `[media_reviews]`
 - Backward-compatible shortcode support with `[book_reviews]`
+- Insert a `Media Reviews` Gutenberg block in single-item or collection mode
 - Search by title or creator
 - Filter by:
   - Media type
@@ -166,7 +167,7 @@ On activation, the plugin creates the `{prefix}_book_reviews` table automaticall
 ### Display reviews
 
 1. Create or edit a page or post
-2. Insert a shortcode such as:
+2. Insert either the `Media Reviews` block or a shortcode such as:
 
 ```text
 [media_reviews]
@@ -257,12 +258,12 @@ The plugin adds these WordPress admin screens:
 - `Media Reviews > Add New`
 - `Media Reviews > Shortcode Generator`
 - `Media Reviews > Import/Export`
-- `Media Reviews > API Import`
 - `Media Reviews > Amazon Bookmarklet`
+- `Media Reviews > Settings`
 
 ## API Import
 
-The plugin includes an admin-only API import workflow for looking up metadata and images from public APIs, then saving the chosen result into WordPress.
+The plugin includes an admin-only API import workflow inside **Media Reviews > Add New**. The right-hand API Lookup panel searches public APIs and imports the selected result into the add form before save.
 
 ### Providers used
 
@@ -276,7 +277,7 @@ The plugin includes an admin-only API import workflow for looking up metadata an
 - API calls happen only during search/import in wp-admin
 - Imported images are downloaded into the WordPress Media Library
 - The plugin stores the resulting local image URL in `cover_image_url`
-- The frontend shortcode continues rendering only from your local WordPress data
+- The frontend shortcode and block continue rendering only from your local WordPress data
 
 ### Required API keys
 
@@ -374,7 +375,7 @@ The Amazon bookmarklet import is intentionally limited:
 
 ## Backward Compatibility
 
-Version `3.2.0` includes migration logic and compatibility support for older installations. It supports older data structures and naming, including:
+Version `3.3.0` includes migration logic and compatibility support for older installations. It supports older data structures and naming, including:
 
 - `author` -> `creator`
 - `genre` -> `category`
@@ -389,6 +390,12 @@ Version `3.2.0` includes migration logic and compatibility support for older ins
 - MySQL 5.6+
 
 ## Changelog
+
+### 3.3.0
+
+- Added a dynamic Gutenberg block for single-item and collection display
+- Added a shared frontend rendering/query layer for the shortcode and block
+- Added block-editor search for saved media items and collection filtering by completion date preset
 
 ### 3.2.0
 

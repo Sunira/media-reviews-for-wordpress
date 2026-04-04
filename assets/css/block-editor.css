@@ -1,0 +1,28 @@
+.wp-block-media-reviews-display {
+    border: 1px dashed #c3c4c7;
+    padding: 16px;
+}
+
+.book-reviews-block-search-results {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 16px;
+}
+
+.book-reviews-block-search-result.components-button {
+    justify-content: flex-start;
+    text-align: left;
+    white-space: normal;
+    height: auto;
+    padding: 10px 12px;
+}
+
+.book-reviews-block-no-results,
+.book-reviews-block-selected-id {
+    color: #50575e;
+    margin: 0 0 16px;
+}
+
+.book-reviews-block-media-types .components-base-control {
+    margin-bottom: 8px;
+}
