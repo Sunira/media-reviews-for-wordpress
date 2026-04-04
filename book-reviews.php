@@ -355,6 +355,23 @@ function book_reviews_register_block_assets() {
 }
 add_action('init', 'book_reviews_register_block_assets');
 
+function book_reviews_enqueue_block_editor_preview_assets() {
+    wp_enqueue_script(
+        'book-reviews-tailwind-preview',
+        'https://cdn.tailwindcss.com',
+        array(),
+        null,
+        false
+    );
+
+    wp_add_inline_script(
+        'book-reviews-tailwind-preview',
+        'tailwind.config = { theme: { extend: { fontFamily: { serif: ["Merriweather", "Georgia", "serif"], sans: ["Inter", "system-ui", "sans-serif"] }, colors: { amber: { 400: "#fbbf24" } } } } };',
+        'after'
+    );
+}
+add_action('enqueue_block_editor_assets', 'book_reviews_enqueue_block_editor_preview_assets');
+
 function book_reviews_render_block($attributes) {
     $media_types = array();
     if (!empty($attributes['mediaTypes']) && is_array($attributes['mediaTypes'])) {

@@ -1,6 +1,6 @@
-# Media Reviews WordPress Plugin
+# Media Reviews for WordPress
 
-A WordPress plugin for managing and displaying reviews for books, movies, music albums, and video games.
+A WordPress plugin for curating, importing, and displaying books, movies, music albums, and video games with a polished admin workflow, block support, and responsive frontend layouts.
 
 ## Version
 
@@ -8,7 +8,7 @@ Current version: `3.3.0`
 
 ## Overview
 
-Media Reviews adds a custom admin area in WordPress where you can store review entries with ratings, notes, cover art, categories, statuses, and dates. It includes frontend shortcodes and a Gutenberg block so you can publish your collection inside any page or post.
+Media Reviews adds a dedicated WordPress workspace for building a personal media library with ratings, notes, cover art, categories, statuses, and dates. It includes API-assisted import tools, frontend shortcodes, and a Gutenberg block so you can publish either a featured item or a filterable collection anywhere on your site.
 
 The plugin began as a book review plugin and still keeps backward compatibility with older book-only data and shortcodes.
 

@@ -9,7 +9,10 @@
   "description": "Display one media item or a filterable collection from Media Reviews.",
   "textdomain": "media-reviews",
   "editorScript": "book-reviews-block-editor",
-  "editorStyle": "book-reviews-block-editor",
+  "editorStyle": [
+    "book-reviews-frontend",
+    "book-reviews-block-editor"
+  ],
   "style": "book-reviews-frontend",
   "attributes": {
     "mode": {
