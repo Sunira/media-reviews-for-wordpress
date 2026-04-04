@@ -4,7 +4,7 @@ A WordPress plugin for managing and displaying reviews for books, movies, music 
 
 ## Version
 
-Current version: `3.1.0`
+Current version: `3.2.0`
 
 ## Overview
 
@@ -17,13 +17,13 @@ The plugin began as a book review plugin and still keeps backward compatibility 
 At a high level, the plugin has three main surfaces:
 
 1. **Admin management**
-   You manage media items in WordPress admin through custom plugin pages for listing items, adding/editing items, import/export, shortcode generation, and Amazon bookmarklet setup.
+   You manage media items in WordPress admin through custom plugin pages for listing items, adding/editing items, import/export, shortcode generation, API-powered import, and Amazon bookmarklet setup.
 
 2. **Data storage**
    The plugin stores media reviews in a custom database table named `{prefix}_book_reviews`. Each row represents one media item with a media type, title, creator, rating, review text, image URL, category, status, and completion date.
 
 3. **Frontend display**
-   The `[media_reviews]` shortcode reads from the custom table and renders a searchable, filterable, sortable media grid or list on the public site.
+   The `[media_reviews]` shortcode reads from the custom table and renders a searchable, filterable, sortable media grid or list on the public site. The public display uses only saved WordPress data and image URLs.
 
 ## Project Structure
 
@@ -48,7 +48,7 @@ These are the most important moving parts in the codebase:
   Builds shortcode examples interactively in wp-admin.
 
 - [includes/amazon-import.php](/Users/sunira/Projects/ClaudeCode/book-reviews-plugin/includes/amazon-import.php)
-  Handles Amazon bookmarklet settings, signed payload verification, and the admin handoff flow.
+  Handles Amazon bookmarklet settings, signed payload verification, API-based lookup/import, image sideloading, and the admin handoff flow.
 
 - [assets/js/admin-script.js](/Users/sunira/Projects/ClaudeCode/book-reviews-plugin/assets/js/admin-script.js)
   Powers admin-side interactions like media upload and bookmarklet copy actions.
@@ -79,6 +79,14 @@ These are the most important moving parts in the codebase:
 3. It signs the payload with the shared secret and sends it to a WordPress admin-post endpoint
 4. WordPress verifies the signature and stores the payload temporarily in a transient
 5. The plugin opens **Add New Media** with the item prefilled for review before save
+
+### API import flow
+
+1. A user opens **Media Reviews > API Import**
+2. The plugin searches public APIs server-side from wp-admin
+3. The user chooses a result to import
+4. The plugin downloads the selected image into the local WordPress Media Library
+5. The plugin opens **Add New Media** with normalized local data prefilled for review before save
 
 ## Media Model
 
@@ -118,6 +126,7 @@ Every media item uses the same base storage model, with labels and status values
 - Generate frontend shortcodes from a built-in shortcode generator
 - Import and export data as CSV
 - Import basic Amazon product metadata with a signed bookmarklet handoff
+- Search public APIs for books, movies, albums, and games, then import results into local WordPress data
 
 ### Frontend
 
@@ -248,7 +257,33 @@ The plugin adds these WordPress admin screens:
 - `Media Reviews > Add New`
 - `Media Reviews > Shortcode Generator`
 - `Media Reviews > Import/Export`
+- `Media Reviews > API Import`
 - `Media Reviews > Amazon Bookmarklet`
+
+## API Import
+
+The plugin includes an admin-only API import workflow for looking up metadata and images from public APIs, then saving the chosen result into WordPress.
+
+### Providers used
+
+- Open Library Search API and Covers API for books
+- TMDb for movies
+- MusicBrainz and Cover Art Archive for music albums
+- RAWG for video games
+
+### How it behaves
+
+- API calls happen only during search/import in wp-admin
+- Imported images are downloaded into the WordPress Media Library
+- The plugin stores the resulting local image URL in `cover_image_url`
+- The frontend shortcode continues rendering only from your local WordPress data
+
+### Required API keys
+
+- TMDb API key
+- RAWG API key
+
+Open Library, MusicBrainz, and Cover Art Archive do not require user-managed keys in this plugin version.
 
 ## Amazon Bookmarklet Import
 
@@ -339,7 +374,7 @@ The Amazon bookmarklet import is intentionally limited:
 
 ## Backward Compatibility
 
-Version `3.1.0` includes migration logic and compatibility support for older installations. It supports older data structures and naming, including:
+Version `3.2.0` includes migration logic and compatibility support for older installations. It supports older data structures and naming, including:
 
 - `author` -> `creator`
 - `genre` -> `category`
@@ -354,6 +389,12 @@ Version `3.1.0` includes migration logic and compatibility support for older ins
 - MySQL 5.6+
 
 ## Changelog
+
+### 3.2.0
+
+- Added an admin-only API import workflow for books, movies, music albums, and games
+- Added local image sideloading into the WordPress Media Library during API import
+- Added static frontend attribution for the metadata and artwork providers used during import
 
 ### 3.1.0
 

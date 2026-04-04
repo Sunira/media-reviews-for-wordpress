@@ -8,10 +8,12 @@ global $wpdb;
 $table_name = $wpdb->prefix . 'book_reviews';
 
 $allowed_media_types = array('book', 'movie', 'music', 'game');
-$amazon_prefill = null;
-$amazon_prefill_key = isset($_GET['amazon_prefill']) ? sanitize_key(wp_unslash($_GET['amazon_prefill'])) : '';
-$amazon_source_url = '';
-$show_amazon_notice = false;
+$prefill_payload = null;
+$prefill_key = isset($_GET['import_prefill']) ? sanitize_key(wp_unslash($_GET['import_prefill'])) : '';
+$import_source = isset($_GET['import_source']) ? sanitize_key(wp_unslash($_GET['import_source'])) : '';
+$reference_source_url = '';
+$show_import_notice = false;
+$success_notice = '';
 
 // Get media item data if editing
 $item = null;
@@ -22,12 +24,47 @@ if (isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['id'])) 
     $is_edit = true;
 }
 
-if (!$is_edit && !empty($amazon_prefill_key)) {
-    $amazon_prefill = get_transient('book_reviews_amazon_prefill_' . $amazon_prefill_key);
-    if (is_array($amazon_prefill)) {
-        $show_amazon_notice = true;
-        $amazon_source_url = !empty($amazon_prefill['source_url']) ? esc_url_raw($amazon_prefill['source_url']) : '';
+if (!$is_edit) {
+    if (!empty($prefill_key)) {
+        $prefill_payload = book_reviews_get_import_prefill($prefill_key);
+    } else {
+        $legacy_prefill_key = isset($_GET['amazon_prefill']) ? sanitize_key(wp_unslash($_GET['amazon_prefill'])) : '';
+        if (!empty($legacy_prefill_key)) {
+            $legacy_prefill = get_transient('book_reviews_amazon_prefill_' . $legacy_prefill_key);
+            if (is_array($legacy_prefill)) {
+                $prefill_payload = array(
+                    'source' => 'amazon',
+                    'data' => book_reviews_normalize_prefill_data($legacy_prefill),
+                );
+                $prefill_key = $legacy_prefill_key;
+            }
+        }
     }
+
+    if (is_array($prefill_payload) && !empty($prefill_payload['data'])) {
+        $show_import_notice = true;
+        $import_source = !empty($prefill_payload['source']) ? sanitize_key($prefill_payload['source']) : 'api';
+        $reference_source_url = !empty($prefill_payload['data']['source_url']) ? esc_url_raw($prefill_payload['data']['source_url']) : '';
+    }
+}
+
+if (isset($_GET['success'])) {
+    $success = sanitize_key(wp_unslash($_GET['success']));
+    if ($success === 'created') {
+        $success_notice = 'Media item added successfully!';
+    } elseif ($success === 'updated') {
+        $success_notice = 'Media item updated successfully!';
+    }
+}
+
+$flash_state = get_transient('book_reviews_form_state_' . get_current_user_id());
+if (is_array($flash_state)) {
+    delete_transient('book_reviews_form_state_' . get_current_user_id());
+}
+
+$lookup_state = get_transient('book_reviews_api_lookup_state_' . get_current_user_id());
+if (is_array($lookup_state)) {
+    delete_transient('book_reviews_api_lookup_state_' . get_current_user_id());
 }
 
 $form_values = array(
@@ -40,87 +77,54 @@ $form_values = array(
     'category' => $item->category ?? $item->genre ?? '',
     'status' => $item->status ?? $item->reading_status ?? 'finished',
     'completion_date' => $item->completion_date ?? $item->date_read ?? '',
-    'source_url' => $amazon_source_url,
+    'source_url' => $reference_source_url,
 );
 
-if ($amazon_prefill) {
-    $form_values['media_type'] = in_array($amazon_prefill['media_type'], $allowed_media_types, true) ? $amazon_prefill['media_type'] : 'book';
-    $form_values['title'] = $amazon_prefill['title'] ?? '';
-    $form_values['creator'] = $amazon_prefill['creator'] ?? '';
-    $form_values['cover_image_url'] = $amazon_prefill['cover_image_url'] ?? '';
-    $form_values['source_url'] = $amazon_source_url;
+if ($prefill_payload && !empty($prefill_payload['data'])) {
+    $prefill_data = $prefill_payload['data'];
+    $form_values['media_type'] = in_array($prefill_data['media_type'], $allowed_media_types, true) ? $prefill_data['media_type'] : 'book';
+    $form_values['title'] = $prefill_data['title'] ?? '';
+    $form_values['creator'] = $prefill_data['creator'] ?? '';
+    $form_values['cover_image_url'] = $prefill_data['cover_image_url'] ?? '';
+    $form_values['category'] = $prefill_data['category'] ?? '';
+    $form_values['source_url'] = $reference_source_url;
 }
 
-// Handle form submission
-if (isset($_POST['book_reviews_submit']) && wp_verify_nonce($_POST['book_reviews_nonce'], 'book_reviews_save')) {
-    // Use wp_unslash to remove any magic quotes slashes before sanitizing
-    $media_type = isset($_POST['media_type']) ? sanitize_text_field(wp_unslash($_POST['media_type'])) : 'book';
-    $title = isset($_POST['title']) ? sanitize_text_field(wp_unslash($_POST['title'])) : '';
-    $creator = isset($_POST['creator']) ? sanitize_text_field(wp_unslash($_POST['creator'])) : '';
-    $rating = isset($_POST['rating']) ? intval($_POST['rating']) : 0;
-    $review_text = isset($_POST['review_text']) ? sanitize_textarea_field(wp_unslash($_POST['review_text'])) : '';
-    $cover_image_url = isset($_POST['cover_image_url']) ? esc_url_raw(wp_unslash($_POST['cover_image_url'])) : '';
-    $category = isset($_POST['category']) ? sanitize_text_field(wp_unslash($_POST['category'])) : '';
-    $status = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : 'finished';
-    $completion_date = !empty($_POST['completion_date']) ? sanitize_text_field(wp_unslash($_POST['completion_date'])) : null;
-    $amazon_source_url = isset($_POST['amazon_source_url']) ? esc_url_raw(wp_unslash($_POST['amazon_source_url'])) : $amazon_source_url;
-    $show_amazon_notice = !empty($_POST['amazon_imported']);
-    $amazon_prefill_key = isset($_POST['amazon_prefill_key']) ? sanitize_key(wp_unslash($_POST['amazon_prefill_key'])) : $amazon_prefill_key;
+if (is_array($flash_state)) {
+    if (!empty($flash_state['error'])) {
+        echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($flash_state['error']) . '</p></div>';
+    }
 
-    $form_values = array(
-        'media_type' => in_array($media_type, $allowed_media_types, true) ? $media_type : 'book',
-        'title' => $title,
-        'creator' => $creator,
-        'rating' => $rating,
-        'review_text' => $review_text,
-        'cover_image_url' => $cover_image_url,
-        'category' => $category,
-        'status' => $status,
-        'completion_date' => $completion_date,
-        'source_url' => $amazon_source_url,
-    );
-    $media_type = $form_values['media_type'];
+    if (!empty($flash_state['form_values']) && is_array($flash_state['form_values'])) {
+        $form_values = wp_parse_args($flash_state['form_values'], $form_values);
+    }
 
-    // Validate
-    if (empty($title) || empty($creator) || $rating < 0 || $rating > 5) {
-        echo '<div class="notice notice-error is-dismissible"><p>Please fill in all required fields correctly. Rating must be 0-5.</p></div>';
+    if (!empty($flash_state['prefill_key'])) {
+        $prefill_key = sanitize_key($flash_state['prefill_key']);
+    }
+
+    if (!empty($flash_state['import_source'])) {
+        $import_source = sanitize_key($flash_state['import_source']);
+    }
+
+    $show_import_notice = !empty($flash_state['imported']);
+}
+
+$lookup_media_type = isset($_GET['lookup_media_type']) ? sanitize_text_field(wp_unslash($_GET['lookup_media_type'])) : $form_values['media_type'];
+$lookup_query = isset($_GET['lookup_query']) ? sanitize_text_field(wp_unslash($_GET['lookup_query'])) : '';
+$lookup_results = array();
+$lookup_error = '';
+
+if (is_array($lookup_state) && !empty($lookup_state['error'])) {
+    $lookup_error = $lookup_state['error'];
+}
+
+if (!empty($lookup_query)) {
+    $search_results = book_reviews_search_api_provider($lookup_media_type, $lookup_query);
+    if (is_wp_error($search_results)) {
+        $lookup_error = $search_results->get_error_message();
     } else {
-        $data = array(
-            'media_type' => $media_type,
-            'title' => $title,
-            'creator' => $creator,
-            'rating' => $rating,
-            'review_text' => $review_text,
-            'cover_image_url' => $cover_image_url,
-            'category' => $category,
-            'status' => $status,
-            'completion_date' => $completion_date
-        );
-
-        $format = array('%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s');
-
-        if ($is_edit && $item) {
-            // Update existing item
-            $wpdb->update($table_name, $data, array('id' => $item->id), $format, array('%d'));
-            if (!empty($amazon_prefill_key)) {
-                delete_transient('book_reviews_amazon_prefill_' . $amazon_prefill_key);
-            }
-            echo '<div class="notice notice-success is-dismissible"><p>Media item updated successfully! <a href="' . admin_url('admin.php?page=book-reviews') . '">View all items</a></p></div>';
-            // Refresh item data
-            $item = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $item->id));
-        } else {
-            // Insert new item
-            $wpdb->insert($table_name, $data, $format);
-            if (!empty($amazon_prefill_key)) {
-                delete_transient('book_reviews_amazon_prefill_' . $amazon_prefill_key);
-            }
-            echo '<div class="notice notice-success is-dismissible"><p>Media item added successfully! <a href="' . admin_url('admin.php?page=book-reviews') . '">View all items</a></p></div>';
-            
-            // Clear form by redirecting
-            $new_id = $wpdb->insert_id;
-            wp_redirect(admin_url('admin.php?page=book-reviews-add&action=edit&id=' . $new_id . '&success=1'));
-            exit;
-        }
+        $lookup_results = $search_results;
     }
 }
 
@@ -129,17 +133,36 @@ if (isset($_POST['book_reviews_submit']) && wp_verify_nonce($_POST['book_reviews
 <div class="wrap">
     <h1><?php echo $is_edit ? 'Edit Media Item' : 'Add New Media Item'; ?></h1>
 
-    <?php if ($show_amazon_notice): ?>
+    <?php if (!empty($success_notice)): ?>
+        <div class="notice notice-success is-dismissible">
+            <p>
+                <?php echo esc_html($success_notice); ?>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=book-reviews')); ?>">View all items</a>
+            </p>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($show_import_notice): ?>
         <div class="notice notice-info">
-            <p><strong>Imported from Amazon.</strong> Review the prefilled fields before saving.</p>
+            <p>
+                <strong>
+                    <?php echo $import_source === 'amazon' ? 'Imported from Amazon.' : 'Imported from an API lookup.'; ?>
+                </strong>
+                Review the prefilled fields before saving.
+            </p>
         </div>
     <?php endif; ?>
     
-    <form method="post" action="">
+    <div class="book-reviews-admin-layout">
+    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="book-reviews-main-form">
         <?php wp_nonce_field('book_reviews_save', 'book_reviews_nonce'); ?>
-        <input type="hidden" name="amazon_prefill_key" value="<?php echo esc_attr($amazon_prefill_key); ?>">
-        <input type="hidden" name="amazon_imported" value="<?php echo $show_amazon_notice ? '1' : '0'; ?>">
-        <input type="hidden" name="amazon_source_url" value="<?php echo esc_attr($form_values['source_url']); ?>">
+        <input type="hidden" name="action" value="book_reviews_save_media">
+        <input type="hidden" name="is_edit" value="<?php echo $is_edit ? '1' : '0'; ?>">
+        <input type="hidden" name="item_id" value="<?php echo $is_edit && $item ? intval($item->id) : 0; ?>">
+        <input type="hidden" name="import_prefill_key" value="<?php echo esc_attr($prefill_key); ?>">
+        <input type="hidden" name="imported" value="<?php echo $show_import_notice ? '1' : '0'; ?>">
+        <input type="hidden" name="import_source" value="<?php echo esc_attr($import_source); ?>">
+        <input type="hidden" name="import_source_url" value="<?php echo esc_attr($form_values['source_url']); ?>">
         
         <!-- Modern Card Design -->
         <div style="background: white; border: 1px solid #c3c4c7; box-shadow: 0 1px 1px rgba(0,0,0,.04); border-radius: 4px; padding: 30px; margin-top: 20px; max-width: 900px;">
@@ -212,11 +235,11 @@ if (isset($_POST['book_reviews_submit']) && wp_verify_nonce($_POST['book_reviews
 
                 <?php if (!empty($form_values['source_url'])): ?>
                     <div style="margin-bottom: 20px;">
-                        <label for="amazon-source-url-display" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #1d2327;">
-                            Amazon Source URL
+                        <label for="import-source-url-display" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #1d2327;">
+                            Source URL
                         </label>
                         <input type="url"
-                               id="amazon-source-url-display"
+                               id="import-source-url-display"
                                value="<?php echo esc_attr($form_values['source_url']); ?>"
                                readonly
                                style="width: 100%; padding: 10px 12px; border: 1px solid #dcdcde; border-radius: 4px; font-size: 14px; background: #f6f7f7;">
@@ -357,9 +380,133 @@ if (isset($_POST['book_reviews_submit']) && wp_verify_nonce($_POST['book_reviews
             </div>
         </div>
     </form>
+    <aside class="book-reviews-lookup-panel">
+        <div class="book-reviews-lookup-card">
+            <h2 style="margin-top: 0;">API Lookup</h2>
+            <p class="description" style="margin-bottom: 16px;">Search public APIs while adding a media item. Imported results are copied into this form and images are downloaded into your local WordPress Media Library.</p>
+
+            <form method="get" class="book-reviews-lookup-form">
+                <input type="hidden" name="page" value="book-reviews-add">
+                <div class="book-reviews-lookup-fields">
+                    <div class="book-reviews-lookup-field book-reviews-lookup-field-type">
+                        <label for="lookup-media-type">Type</label>
+                        <select id="lookup-media-type" name="lookup_media_type">
+                            <option value="book" <?php selected($lookup_media_type, 'book'); ?>>Book</option>
+                            <option value="movie" <?php selected($lookup_media_type, 'movie'); ?>>Movie</option>
+                            <option value="music" <?php selected($lookup_media_type, 'music'); ?>>Music Album</option>
+                            <option value="game" <?php selected($lookup_media_type, 'game'); ?>>Video Game</option>
+                        </select>
+                    </div>
+                    <div class="book-reviews-lookup-field book-reviews-lookup-field-query">
+                        <label for="lookup-query">Search</label>
+                        <input type="text" id="lookup-query" name="lookup_query" value="<?php echo esc_attr($lookup_query); ?>" placeholder="Title or title and creator">
+                    </div>
+                </div>
+                <p class="book-reviews-lookup-actions">
+                    <button type="submit" class="button button-primary">Search APIs</button>
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=book-reviews-settings')); ?>" class="button">Settings</a>
+                </p>
+            </form>
+
+            <p class="description" style="margin-top: 16px;">Uses Open Library, TMDb, MusicBrainz, Cover Art Archive, and RAWG during lookup only. The public site uses only saved local data.</p>
+        </div>
+
+        <?php if (!empty($lookup_error)): ?>
+            <div class="notice notice-error" style="margin: 16px 0 0;">
+                <p><?php echo esc_html($lookup_error); ?></p>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!empty($lookup_query)): ?>
+            <div class="book-reviews-lookup-results">
+                <h2 style="margin: 16px 0;">Lookup Results</h2>
+                <?php if (empty($lookup_results)): ?>
+                    <div class="notice notice-info" style="margin: 0;"><p>No matching results were found.</p></div>
+                <?php else: ?>
+                    <div style="display: grid; gap: 16px;">
+                        <?php foreach ($lookup_results as $lookup_result): ?>
+                            <?php book_reviews_render_import_result_card($lookup_result); ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </aside>
+    </div>
 </div>
 
 <style>
+.book-reviews-admin-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 24px;
+    align-items: start;
+}
+
+.book-reviews-main-form {
+    min-width: 0;
+}
+
+.book-reviews-main-form > div {
+    max-width: none !important;
+}
+
+.book-reviews-lookup-panel {
+    position: sticky;
+    top: 24px;
+}
+
+.book-reviews-lookup-card {
+    background: white;
+    border: 1px solid #c3c4c7;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.book-reviews-lookup-form {
+    display: grid;
+    gap: 14px;
+}
+
+.book-reviews-lookup-fields {
+    display: grid;
+    grid-template-columns: minmax(110px, 132px) minmax(0, 1fr);
+    gap: 12px;
+    align-items: end;
+}
+
+.book-reviews-lookup-field {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+.book-reviews-lookup-field label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #50575e;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.book-reviews-lookup-field select,
+.book-reviews-lookup-field input {
+    width: 100%;
+    min-height: 40px;
+}
+
+.book-reviews-lookup-actions {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.book-reviews-lookup-actions .button {
+    margin: 0;
+}
+
 /* Rating selector styling */
 .rating-star {
     position: relative;
@@ -410,15 +557,27 @@ textarea:focus {
 
 /* Responsive */
 @media (max-width: 768px) {
+    .book-reviews-admin-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .book-reviews-lookup-panel {
+        position: static;
+    }
+
     .wrap > div {
         margin-top: 20px !important;
     }
+
+    .book-reviews-lookup-fields {
+        grid-template-columns: 1fr;
+    }
     
-    .wrap > div > form {
+    .book-reviews-main-form > div {
         padding: 20px !important;
     }
     
-    .wrap > div > form > div > div[style*="grid-template-columns"] {
+    .book-reviews-main-form > div > div[style*="grid-template-columns"] {
         grid-template-columns: 1fr !important;
     }
     

@@ -3,7 +3,7 @@
  * Plugin Name: Media Reviews
  * Plugin URI: https://unbrokenhorse.com/media-reviews
  * Description: A WordPress plugin to manage and display reviews for books, movies, music albums, and video games with ratings
- * Version: 3.1.0
+ * Version: 3.2.0
  * Author: UnbrokenHorse.com
  * Author URI: https://unbrokenhorse.com
  * License: GPL v2 or later
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('BOOK_REVIEWS_VERSION', '3.1.0');
+define('BOOK_REVIEWS_VERSION', '3.2.0');
 define('BOOK_REVIEWS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('BOOK_REVIEWS_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -176,6 +176,15 @@ function book_reviews_admin_menu() {
         'book-reviews-amazon',
         'book_reviews_amazon_import_page'
     );
+
+    add_submenu_page(
+        'book-reviews',
+        'Settings',
+        'Settings',
+        'manage_options',
+        'book-reviews-settings',
+        'book_reviews_import_settings_page'
+    );
 }
 add_action('admin_menu', 'book_reviews_admin_menu');
 
@@ -192,6 +201,104 @@ function book_reviews_admin_page() {
 function book_reviews_add_page() {
     include BOOK_REVIEWS_PLUGIN_DIR . 'includes/admin-form.php';
 }
+
+function book_reviews_handle_admin_form_submission() {
+    if (!is_admin() || !current_user_can('manage_options')) {
+        return;
+    }
+
+    if (!isset($_POST['book_reviews_nonce'])) {
+        return;
+    }
+
+    if (!wp_verify_nonce(wp_unslash($_POST['book_reviews_nonce']), 'book_reviews_save')) {
+        return;
+    }
+
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'book_reviews';
+    $allowed_media_types = array('book', 'movie', 'music', 'game');
+
+    $is_edit = !empty($_POST['is_edit']);
+    $item_id = $is_edit && !empty($_POST['item_id']) ? absint($_POST['item_id']) : 0;
+
+    $media_type = isset($_POST['media_type']) ? sanitize_text_field(wp_unslash($_POST['media_type'])) : 'book';
+    $title = isset($_POST['title']) ? sanitize_text_field(wp_unslash($_POST['title'])) : '';
+    $creator = isset($_POST['creator']) ? sanitize_text_field(wp_unslash($_POST['creator'])) : '';
+    $rating = isset($_POST['rating']) ? intval($_POST['rating']) : 0;
+    $review_text = isset($_POST['review_text']) ? sanitize_textarea_field(wp_unslash($_POST['review_text'])) : '';
+    $cover_image_url = isset($_POST['cover_image_url']) ? esc_url_raw(wp_unslash($_POST['cover_image_url'])) : '';
+    $category = isset($_POST['category']) ? sanitize_text_field(wp_unslash($_POST['category'])) : '';
+    $status = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : 'finished';
+    $completion_date = !empty($_POST['completion_date']) ? sanitize_text_field(wp_unslash($_POST['completion_date'])) : null;
+    $import_source_url = isset($_POST['import_source_url']) ? esc_url_raw(wp_unslash($_POST['import_source_url'])) : '';
+    $imported = !empty($_POST['imported']);
+    $prefill_key = isset($_POST['import_prefill_key']) ? sanitize_key(wp_unslash($_POST['import_prefill_key'])) : '';
+    $import_source = isset($_POST['import_source']) ? sanitize_key(wp_unslash($_POST['import_source'])) : '';
+
+    $form_values = array(
+        'media_type' => in_array($media_type, $allowed_media_types, true) ? $media_type : 'book',
+        'title' => $title,
+        'creator' => $creator,
+        'rating' => $rating,
+        'review_text' => $review_text,
+        'cover_image_url' => $cover_image_url,
+        'category' => $category,
+        'status' => $status,
+        'completion_date' => $completion_date,
+        'source_url' => $import_source_url,
+    );
+
+    $redirect_args = array('page' => 'book-reviews-add');
+    if ($is_edit) {
+        $redirect_args['action'] = 'edit';
+        $redirect_args['id'] = $item_id;
+    }
+
+    if (empty($title) || empty($creator) || $rating < 0 || $rating > 5) {
+        set_transient(
+            'book_reviews_form_state_' . get_current_user_id(),
+            array(
+                'error' => 'Please fill in all required fields correctly. Rating must be 0-5.',
+                'form_values' => $form_values,
+                'prefill_key' => $prefill_key,
+                'import_source' => $import_source,
+                'imported' => $imported,
+            ),
+            5 * MINUTE_IN_SECONDS
+        );
+
+        wp_safe_redirect(add_query_arg($redirect_args, admin_url('admin.php')));
+        exit;
+    }
+
+    $data = array(
+        'media_type' => $form_values['media_type'],
+        'title' => $title,
+        'creator' => $creator,
+        'rating' => $rating,
+        'review_text' => $review_text,
+        'cover_image_url' => $cover_image_url,
+        'category' => $category,
+        'status' => $status,
+        'completion_date' => $completion_date,
+    );
+    $format = array('%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s');
+
+    if ($is_edit && $item_id > 0) {
+        $wpdb->update($table_name, $data, array('id' => $item_id), $format, array('%d'));
+        book_reviews_delete_import_prefill($prefill_key);
+        wp_safe_redirect(admin_url('admin.php?page=book-reviews-add&action=edit&id=' . $item_id . '&success=updated'));
+        exit;
+    }
+
+    $wpdb->insert($table_name, $data, $format);
+    $new_id = $wpdb->insert_id;
+    book_reviews_delete_import_prefill($prefill_key);
+    wp_safe_redirect(admin_url('admin.php?page=book-reviews-add&action=edit&id=' . $new_id . '&success=created'));
+    exit;
+}
+add_action('admin_post_book_reviews_save_media', 'book_reviews_handle_admin_form_submission');
 
 /**
  * Shortcode generator page

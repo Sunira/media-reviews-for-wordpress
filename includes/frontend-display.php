@@ -337,6 +337,19 @@ tailwind.config = {
         <?php endif; ?>
         </div>
     </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+        <p class="text-xs text-stone-500 leading-relaxed">
+            Metadata lookup and artwork imports for this collection may use
+            <a href="https://openlibrary.org/" target="_blank" rel="noopener noreferrer" class="underline">Open Library</a>,
+            <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" class="underline">TMDb</a>,
+            <a href="https://musicbrainz.org/" target="_blank" rel="noopener noreferrer" class="underline">MusicBrainz</a>,
+            <a href="https://coverartarchive.org/" target="_blank" rel="noopener noreferrer" class="underline">Cover Art Archive</a>,
+            and
+            <a href="https://rawg.io/" target="_blank" rel="noopener noreferrer" class="underline">RAWG</a>.
+            Public display is served from locally saved WordPress data and images.
+        </p>
+    </div>
 </div>
 
 <!-- Modal for viewing full review -->
