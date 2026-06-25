@@ -2,7 +2,7 @@
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 2,
   "name": "media-reviews/display",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "title": "Media Reviews",
   "category": "widgets",
   "icon": "format-gallery",

@@ -40,6 +40,7 @@ $table_name = $wpdb->prefix . 'book_reviews';
                             <option value="movie">🎬 Movies</option>
                             <option value="music">🎵 Music Albums</option>
                             <option value="game">🎮 Video Games</option>
+                            <option value="tv">📺 TV Shows</option>
                         </select>
                         <p class="description" style="margin: 8px 0 0;">Hold Ctrl/Cmd to select multiple types. Leave empty for all types.</p>
                     </div>
@@ -114,6 +115,15 @@ $table_name = $wpdb->prefix . 'book_reviews';
                             <option value="currently_reading">Currently Reading</option>
                             <option value="want_to_read">Want to Read</option>
                             <option value="abandoned">Abandoned</option>
+                            <option value="watched">Watched</option>
+                            <option value="want_to_watch">Want to Watch</option>
+                            <option value="listened">Listened</option>
+                            <option value="currently_listening">Currently Listening</option>
+                            <option value="want_to_listen">Want to Listen</option>
+                            <option value="completed">Completed</option>
+                            <option value="playing">Currently Playing</option>
+                            <option value="want_to_play">Want to Play</option>
+                            <option value="watching">Currently Watching</option>
                         </select>
                         <p class="description" style="margin: 8px 0 0;">
                             Hold <strong>Ctrl</strong> (Windows) or <strong>Cmd</strong> (Mac) to select multiple statuses
@@ -192,6 +202,9 @@ $table_name = $wpdb->prefix . 'book_reviews';
                             </button>
                             <button type="button" class="button preset-btn" data-preset="games" style="padding: 10px; height: auto; white-space: normal;">
                                 🎮 Games Only
+                            </button>
+                            <button type="button" class="button preset-btn" data-preset="tv" style="padding: 10px; height: auto; white-space: normal;">
+                                📺 TV Shows Only
                             </button>
                             <button type="button" class="button preset-btn" data-preset="reading" style="padding: 10px; height: auto; white-space: normal;">
                                 📖 Currently Reading
@@ -388,6 +401,9 @@ $table_name = $wpdb->prefix . 'book_reviews';
                     break;
                 case 'games':
                     $('#sc-media-type').val(['game']);
+                    break;
+                case 'tv':
+                    $('#sc-media-type').val(['tv']);
                     break;
                 case 'reading':
                     $('#sc-status').val(['currently_reading']); // Array for multiselect

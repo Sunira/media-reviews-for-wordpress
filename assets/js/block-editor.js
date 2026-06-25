@@ -25,7 +25,8 @@
             { label: 'Books', value: 'book' },
             { label: 'Movies', value: 'movie' },
             { label: 'Music', value: 'music' },
-            { label: 'Games', value: 'game' }
+            { label: 'Games', value: 'game' },
+            { label: 'TV Shows', value: 'tv' }
         ];
 
         return el(

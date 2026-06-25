@@ -60,7 +60,7 @@ if (isset($_POST['import_books']) && wp_verify_nonce($_POST['import_nonce'], 'im
                 }
                 
                 // Support both old and new CSV formats
-                $is_new_format = (count($data) >= 11 && isset($data[1]) && in_array($data[1], ['book', 'movie', 'music', 'game']));
+                $is_new_format = (count($data) >= 11 && isset($data[1]) && in_array($data[1], ['book', 'movie', 'music', 'game', 'tv'], true));
                 
                 if ($is_new_format) {
                     // New format: ID, Media Type, Title, Creator, Rating, Category, Status, Completion Date, Review, Cover URL, Date Added
@@ -175,7 +175,8 @@ if (isset($_POST['import_books']) && wp_verify_nonce($_POST['import_nonce'], 'im
         <p>Here is an example of the current CSV format:</p>
         <pre style="background: #f5f5f5; padding: 15px; overflow-x: auto;">ID,Media Type,Title,Creator,Rating,Category,Status,Completion Date,Review,Cover Image URL,Date Added
 1,book,"The Great Gatsby","F. Scott Fitzgerald",5,"Fiction","finished","2024-01-15","A masterpiece of American literature","https://example.com/image.jpg","2024-01-15 10:00:00"
-2,movie,"Spirited Away","Hayao Miyazaki",5,"Animation","watched","2024-02-20","Beautiful and unforgettable","","2024-02-20 14:30:00"</pre>
+2,movie,"Spirited Away","Hayao Miyazaki",5,"Animation","watched","2024-02-20","Beautiful and unforgettable","","2024-02-20 14:30:00"
+3,tv,"Reservation Dogs","Sterlin Harjo",5,"Comedy","finished","2024-03-12","Funny, warm, and beautifully observed","","2024-03-12 09:00:00"</pre>
 
         <h3>Valid Status Values:</h3>
         <ul>
@@ -183,6 +184,7 @@ if (isset($_POST['import_books']) && wp_verify_nonce($_POST['import_nonce'], 'im
             <li><code>watched</code>, <code>want_to_watch</code>, <code>abandoned</code> for movies</li>
             <li><code>listened</code>, <code>currently_listening</code>, <code>want_to_listen</code> for music</li>
             <li><code>completed</code>, <code>playing</code>, <code>want_to_play</code>, <code>abandoned</code> for games</li>
+            <li><code>finished</code>, <code>watching</code>, <code>want_to_watch</code>, <code>abandoned</code> for TV shows</li>
         </ul>
     </div>
 </div>

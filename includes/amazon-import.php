@@ -59,7 +59,7 @@ function book_reviews_get_rawg_api_key() {
 }
 
 function book_reviews_normalize_prefill_data($data) {
-    $allowed_media_types = array('book', 'movie', 'music', 'game');
+    $allowed_media_types = array('book', 'movie', 'music', 'game', 'tv');
     $media_type = isset($data['media_type']) ? sanitize_text_field($data['media_type']) : 'book';
 
     return array(
@@ -258,6 +258,74 @@ function book_reviews_search_open_library($query) {
     return $results;
 }
 
+function book_reviews_fetch_tmdb_tv_details($show_id, $api_key) {
+    $url = add_query_arg(
+        array(
+            'api_key' => $api_key,
+        ),
+        'https://api.themoviedb.org/3/tv/' . absint($show_id)
+    );
+
+    return book_reviews_api_request_json($url);
+}
+
+function book_reviews_search_tmdb_tv($query) {
+    $api_key = book_reviews_get_tmdb_api_key();
+    if (empty($api_key)) {
+        return new WP_Error('book_reviews_missing_tmdb_key', 'Add a TMDb API key before searching for TV shows.');
+    }
+
+    $url = add_query_arg(
+        array(
+            'api_key' => $api_key,
+            'query' => $query,
+            'include_adult' => 'false',
+        ),
+        'https://api.themoviedb.org/3/search/tv'
+    );
+
+    $data = book_reviews_api_request_json($url);
+    if (is_wp_error($data)) {
+        return $data;
+    }
+
+    $results = array();
+    foreach (array_slice($data['results'] ?? array(), 0, 8) as $show) {
+        $details = book_reviews_fetch_tmdb_tv_details($show['id'] ?? 0, $api_key);
+        $creator = '';
+        $category = '';
+
+        if (!is_wp_error($details)) {
+            $created_by = $details['created_by'] ?? array();
+            if (!empty($created_by) && is_array($created_by)) {
+                $creator = sanitize_text_field($created_by[0]['name'] ?? '');
+            }
+
+            if (!empty($details['genres']) && is_array($details['genres'])) {
+                $category = sanitize_text_field($details['genres'][0]['name'] ?? '');
+            }
+        }
+
+        $poster_path = $show['poster_path'] ?? '';
+        $image_url = $poster_path ? 'https://image.tmdb.org/t/p/original' . $poster_path : '';
+        $thumbnail_url = $poster_path ? 'https://image.tmdb.org/t/p/w342' . $poster_path : '';
+        $first_air_date = !empty($show['first_air_date']) ? sanitize_text_field($show['first_air_date']) : '';
+
+        $results[] = array(
+            'provider' => 'TMDb',
+            'media_type' => 'tv',
+            'title' => sanitize_text_field($show['name'] ?? ''),
+            'creator' => $creator,
+            'year' => $first_air_date ? substr($first_air_date, 0, 4) : '',
+            'category' => $category,
+            'cover_image_url' => $image_url,
+            'thumbnail_url' => $thumbnail_url ?: $image_url,
+        );
+    }
+
+    return $results;
+}
+
 function book_reviews_fetch_tmdb_movie_details($movie_id, $api_key) {
     $url = add_query_arg(
         array(
@@ -341,7 +409,7 @@ function book_reviews_search_musicbrainz_releases($query) {
 
     $headers = array(
         'Accept' => 'application/json',
-        'User-Agent' => 'MediaReviewsWordPressPlugin/3.1.0',
+        'User-Agent' => 'MediaReviewsWordPressPlugin/3.4.0',
     );
 
     $data = book_reviews_api_request_json($url, $headers);
@@ -425,7 +493,7 @@ function book_reviews_fetch_musicbrainz_release_group_details($release_group_id)
 
     $headers = array(
         'Accept' => 'application/json',
-        'User-Agent' => 'MediaReviewsWordPressPlugin/3.3.0',
+        'User-Agent' => 'MediaReviewsWordPressPlugin/3.4.0',
     );
 
     $data = book_reviews_api_request_json($url, $headers);
@@ -569,6 +637,8 @@ function book_reviews_search_api_provider($media_type, $query) {
             return book_reviews_search_musicbrainz_releases($query);
         case 'game':
             return book_reviews_search_rawg_games($query);
+        case 'tv':
+            return book_reviews_search_tmdb_tv($query);
         default:
             return new WP_Error('book_reviews_invalid_media_type', 'Choose a valid media type before searching.');
     }
@@ -712,6 +782,10 @@ function book_reviews_build_amazon_bookmarklet_code($target_url, $secret) {
             .join(' | ')
             .toLowerCase();
 
+        if (/(tv series|television|season|complete series|showrunner|episodes|episode|streaming series)/.test(haystack)) {
+            return 'tv';
+        }
+
         if (/(blu-ray|dvd|4k ultra hd|prime video|movie|film|directed by|actor)/.test(haystack)) {
             return 'movie';
         }
@@ -763,7 +837,7 @@ function book_reviews_build_amazon_bookmarklet_code($target_url, $secret) {
         alertAndStop('Could not find a media title on this page. Make sure you are on an Amazon product detail page.');
     }
 
-    const creator = firstJsonLdValue(jsonLdEntries, ['author', 'creator', 'director', 'byArtist']) || readText([
+    const creator = firstJsonLdValue(jsonLdEntries, ['author', 'creator', 'director', 'byArtist', 'producer']) || readText([
         '#bylineInfo',
         '.author .a-link-normal',
         '.author .contributorNameID',
@@ -891,6 +965,8 @@ function book_reviews_render_import_result_card($result) {
         $creator_label = 'Artist';
     } elseif ($result['media_type'] === 'game') {
         $creator_label = 'Developer';
+    } elseif ($result['media_type'] === 'tv') {
+        $creator_label = 'Creator';
     }
     ?>
     <div style="display: grid; grid-template-columns: 96px 1fr; gap: 16px; padding: 16px; border: 1px solid #dcdcde; border-radius: 8px; background: white;">
@@ -987,7 +1063,7 @@ function book_reviews_import_settings_page() {
                         <th scope="row"><label for="tmdb-api-key">TMDb API key</label></th>
                         <td>
                             <input type="text" class="regular-text code" id="tmdb-api-key" name="tmdb_api_key" value="<?php echo esc_attr(book_reviews_get_tmdb_api_key()); ?>">
-                            <p class="description">Required only for movie lookups.</p>
+                            <p class="description">Required for movie and TV show lookups.</p>
                         </td>
                     </tr>
                     <tr>

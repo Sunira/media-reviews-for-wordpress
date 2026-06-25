@@ -1,5 +1,17 @@
 // Vanilla JavaScript - No jQuery!
 document.addEventListener('DOMContentLoaded', function() {
+    function markReviewScrollInteraction(scrollZone) {
+        if (!scrollZone) {
+            return;
+        }
+
+        scrollZone.dataset.scrollInteracting = '1';
+        window.clearTimeout(scrollZone._scrollInteractionTimer);
+        scrollZone._scrollInteractionTimer = window.setTimeout(function() {
+            delete scrollZone.dataset.scrollInteracting;
+        }, 180);
+    }
+
     // Media type configuration
     const mediaConfig = {
         book: {
@@ -17,87 +29,88 @@ document.addEventListener('DOMContentLoaded', function() {
         game: {
             creator: 'Developer',
             findButton: 'Find this Game'
+        },
+        tv: {
+            creator: 'Creator',
+            findButton: 'Find this TV Show'
         }
     };
     
     // Initialize each media reviews instance
     document.querySelectorAll('[data-book-reviews-instance], [data-view]').forEach(container => {
-        const instanceId = container.id;
+        const state = {
+            search: {
+                text: ''
+            },
+            filters: {
+                mediaType: '',
+                category: '',
+                status: ''
+            },
+            rating: {
+                threshold: ''
+            },
+            sort: {
+                order: 'date-desc'
+            }
+        };
         
         function getItems() {
             return container.querySelectorAll('.book-review-item');
         }
-        
-        // Filter items based on current filter values
-        function filterBooks() {
-            const searchInput = container.querySelector('.book-search-input');
-            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-            const mediaTypeFilter = container.querySelector('.media-type-filter')?.value || '';
-            const genreFilter = container.querySelector('.genre-filter')?.value || '';
-            const statusFilter = container.querySelector('.status-filter')?.value || '';
-            const ratingFilter = container.querySelector('.rating-filter')?.value || '';
-            
-            let visibleCount = 0;
-            
-            getItems().forEach(card => {
-                const title = card.dataset.title || '';
-                const creator = card.dataset.creator || '';
-                const category = card.dataset.category || '';
-                const status = card.dataset.status || '';
-                const rating = parseInt(card.dataset.rating) || 0;
-                const mediaType = card.dataset.mediaType || 'book';
-                
-                let show = true;
-                
-                // Search filter
-                if (searchTerm && !title.includes(searchTerm) && !creator.includes(searchTerm)) {
-                    show = false;
-                }
-                
-                // Media type filter
-                if (mediaTypeFilter && mediaType !== mediaTypeFilter) {
-                    show = false;
-                }
-                
-                // Genre filter (handle comma-separated)
-                if (genreFilter) {
-                    const categories = category.split(',').map(g => g.trim());
-                    if (!categories.includes(genreFilter)) {
-                        show = false;
-                    }
-                }
-                
-                // Status filter
-                if (statusFilter && status !== statusFilter) {
-                    show = false;
-                }
-                
-                // Rating filter
-                if (ratingFilter) {
-                    const minRating = parseInt(ratingFilter);
-                    if (rating < minRating) {
-                        show = false;
-                    }
-                }
-                
-                // Show/hide card
-                if (show) {
-                    card.classList.remove('hidden');
-                    card.style.display = '';
-                    visibleCount++;
-                } else {
-                    card.classList.add('hidden');
-                    card.style.display = 'none';
-                }
-            });
-            
-            // Show/hide no results message
+
+        function getVisibleItems() {
+            return Array.from(getItems()).filter(card => !card.classList.contains('hidden'));
+        }
+
+        function updateResultsSummary(visibleCount) {
+            const summaryEl = container.querySelector('.book-reviews-results-summary');
+            if (!summaryEl) {
+                return;
+            }
+
+            const parts = [];
+            const countLabel = visibleCount === 1 ? 'result' : 'results';
+            let summary = 'Showing ' + visibleCount + ' ' + countLabel;
+
+            if (state.search.text) {
+                summary += ' for “‘' + state.search.text + '”';
+            }
+
+            if (state.filters.mediaType) {
+                const labelMap = {
+                    book: 'Books',
+                    movie: 'Movies',
+                    music: 'Music',
+                    game: 'Games',
+                    tv: 'TV Shows'
+                };
+                parts.push(labelMap[state.filters.mediaType] || state.filters.mediaType);
+            }
+
+            if (state.filters.category) {
+                parts.push(state.filters.category);
+            }
+
+            if (state.filters.status) {
+                parts.push(state.filters.status.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()));
+            }
+
+            if (state.rating.threshold) {
+                parts.push(state.rating.threshold === '5' ? '5★' : state.rating.threshold + '★+');
+            }
+
+            summaryEl.textContent = parts.length > 0 ? summary + ' · Filtered by ' + parts.join(', ') : summary;
+        }
+
+        function updateNoResultsState(visibleCount) {
             const grid = container.querySelector('.book-reviews-items, .grid');
             if (!grid) {
                 return;
             }
+
             let noResults = grid.querySelector('.no-results-message');
-            
+
             if (visibleCount === 0) {
                 if (!noResults) {
                     noResults = document.createElement('p');
@@ -111,18 +124,69 @@ document.addEventListener('DOMContentLoaded', function() {
                 noResults.style.display = 'none';
             }
         }
-        
-        // Sort items
-        function sortBooks(sortBy) {
+
+        function applyFilters() {
+            let visibleCount = 0;
+
+            getItems().forEach(card => {
+                const title = card.dataset.title || '';
+                const creator = card.dataset.creator || '';
+                const category = card.dataset.category || '';
+                const status = card.dataset.status || '';
+                const rating = parseInt(card.dataset.rating) || 0;
+                const mediaType = card.dataset.mediaType || 'book';
+                let show = true;
+
+                if (state.search.text && !title.includes(state.search.text) && !creator.includes(state.search.text)) {
+                    show = false;
+                }
+
+                if (state.filters.mediaType && mediaType !== state.filters.mediaType) {
+                    show = false;
+                }
+
+                if (state.filters.category) {
+                    const categories = category.split(',').map(g => g.trim());
+                    if (!categories.includes(state.filters.category)) {
+                        show = false;
+                    }
+                }
+
+                if (state.filters.status && status !== state.filters.status) {
+                    show = false;
+                }
+
+                if (state.rating.threshold) {
+                    const minRating = parseInt(state.rating.threshold, 10);
+                    if (rating < minRating) {
+                        show = false;
+                    }
+                }
+
+                if (show) {
+                    card.classList.remove('hidden');
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.classList.add('hidden');
+                    card.style.display = 'none';
+                }
+            });
+
+            updateNoResultsState(visibleCount);
+            updateResultsSummary(visibleCount);
+        }
+
+        function applySort() {
             const grid = container.querySelector('.book-reviews-items, .grid');
             if (!grid) {
                 return;
             }
 
             const cards = Array.from(getItems());
-            
+
             cards.sort((a, b) => {
-                switch(sortBy) {
+                switch(state.sort.order) {
                     case 'date-desc':
                         return (b.dataset.date || '').localeCompare(a.dataset.date || '');
                     case 'date-asc':
@@ -143,22 +207,62 @@ document.addEventListener('DOMContentLoaded', function() {
             // Re-append in sorted order
             cards.forEach(card => grid.appendChild(card));
         }
-        
-        // Event listeners
+
+        function refreshResults() {
+            applySort();
+            applyFilters();
+        }
+
         const searchInput = container.querySelector('.book-search-input');
         if (searchInput) {
-            searchInput.addEventListener('input', filterBooks);
+            searchInput.addEventListener('input', function(e) {
+                state.search.text = e.target.value.toLowerCase().trim();
+                applyFilters();
+            });
         }
-        
-        const filters = container.querySelectorAll('.genre-filter, .status-filter, .rating-filter, .media-type-filter');
-        filters.forEach(filter => {
-            filter.addEventListener('change', filterBooks);
-        });
-        
+
+        const mediaTypeFilter = container.querySelector('.media-type-filter');
+        if (mediaTypeFilter) {
+            mediaTypeFilter.addEventListener('change', function(e) {
+                state.filters.mediaType = e.target.value;
+                applyFilters();
+            });
+        }
+
+        const categoryFilter = container.querySelector('.genre-filter');
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', function(e) {
+                state.filters.category = e.target.value;
+                applyFilters();
+            });
+        }
+
+        const statusFilter = container.querySelector('.status-filter');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', function(e) {
+                state.filters.status = e.target.value;
+                applyFilters();
+            });
+        }
+
+        const ratingFilter = container.querySelector('.rating-filter');
+        if (ratingFilter) {
+            ratingFilter.addEventListener('change', function(e) {
+                state.rating.threshold = e.target.value;
+                applyFilters();
+            });
+        }
+
         const sortSelect = container.querySelector('.book-sort');
         if (sortSelect) {
-            sortSelect.addEventListener('change', (e) => sortBooks(e.target.value));
+            state.sort.order = sortSelect.value;
+            sortSelect.addEventListener('change', function(e) {
+                state.sort.order = e.target.value;
+                refreshResults();
+            });
         }
+
+        refreshResults();
     });
     
     // Modal functionality - works across all instances
@@ -187,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (itemData.cover_image_url) {
             modalHTML += `<img src="${itemData.cover_image_url}" alt="Cover of ${itemData.title}" class="h-full w-full object-cover">`;
         } else {
-            const mediaIcons = { book: '📚', movie: '🎬', music: '🎵', game: '🎮' };
+            const mediaIcons = { book: '📚', movie: '🎬', music: '🎵', game: '🎮', tv: '📺' };
             const icon = mediaIcons[mediaType] || '📄';
             modalHTML += `<div class="h-full w-full flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200"><span class="text-8xl opacity-30">${icon}</span></div>`;
         }
@@ -222,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const readStatuses = ['finished', 'watched', 'listened', 'completed'];
         if (itemData.status && readStatuses.includes(itemData.status)) {
-            const labels = { finished: 'Read', watched: 'Watched', listened: 'Listened', completed: 'Completed' };
+            const labels = { finished: 'Finished', watched: 'Watched', listened: 'Listened', completed: 'Completed' };
             modalHTML += `<span class="inline-block text-sm px-3 py-1 rounded-full font-medium bg-green-100 text-green-700">${labels[itemData.status]}</span>`;
         }
         modalHTML += '</div>';
@@ -277,7 +381,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Card click handler - toggle flip
     document.addEventListener('click', (e) => {
-        if (e.target.closest('.book-card-review-scroll')) {
+        const reviewScrollZone = e.target.closest('.book-card-review-scroll');
+        if (reviewScrollZone && reviewScrollZone.dataset.scrollInteracting === '1') {
+            e.preventDefault();
+            e.stopPropagation();
             return;
         }
 
@@ -312,11 +419,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (nextScrollTop !== scrollZone.scrollTop) {
             scrollZone.scrollTop = nextScrollTop;
+            markReviewScrollInteraction(scrollZone);
             e.preventDefault();
         }
 
         e.stopPropagation();
     }, { passive: false });
+
+    document.addEventListener('pointerdown', (e) => {
+        const scrollZone = e.target.closest('.book-card-review-scroll');
+        if (!scrollZone) {
+            return;
+        }
+
+        scrollZone.dataset.pointerStartY = String(e.clientY);
+        delete scrollZone.dataset.scrollInteracting;
+    });
+
+    document.addEventListener('pointermove', (e) => {
+        const scrollZone = e.target.closest('.book-card-review-scroll');
+        if (!scrollZone || !scrollZone.dataset.pointerStartY) {
+            return;
+        }
+
+        const startY = parseFloat(scrollZone.dataset.pointerStartY);
+        if (Math.abs(e.clientY - startY) > 6) {
+            markReviewScrollInteraction(scrollZone);
+        }
+    });
+
+    document.addEventListener('pointerup', (e) => {
+        const scrollZone = e.target.closest('.book-card-review-scroll');
+        if (!scrollZone) {
+            return;
+        }
+
+        delete scrollZone.dataset.pointerStartY;
+    });
     
     // Close button click
     document.addEventListener('click', (e) => {

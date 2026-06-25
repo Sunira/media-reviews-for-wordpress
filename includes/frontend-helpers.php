@@ -18,6 +18,7 @@ if (!function_exists('get_media_type_icon')) {
             'movie' => '🎬',
             'music' => '🎵',
             'game' => '🎮',
+            'tv' => '📺',
         );
 
         return $icons[$type] ?? '📄';
@@ -31,6 +32,7 @@ if (!function_exists('get_media_type_label')) {
             'movie' => 'Movie',
             'music' => 'Album',
             'game' => 'Game',
+            'tv' => 'TV Show',
         );
 
         return $labels[$type] ?? ucfirst($type);
@@ -44,6 +46,7 @@ if (!function_exists('get_creator_label')) {
             'movie' => 'Director',
             'music' => 'Artist',
             'game' => 'Developer',
+            'tv' => 'Creator',
         );
 
         return $labels[$type] ?? 'Creator';
@@ -64,6 +67,7 @@ function book_reviews_get_all_status_labels() {
         'completed' => 'Completed',
         'playing' => 'Playing',
         'want_to_play' => 'Want to Play',
+        'watching' => 'Currently Watching',
     );
 }
 
@@ -226,48 +230,53 @@ function book_reviews_render_media_filters($instance_id, $filter_options) {
     ob_start();
     ?>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
-        <div class="flex flex-col sm:flex-row gap-3 items-stretch">
-            <div class="flex-1">
+        <div class="book-reviews-toolbar" data-instance="<?php echo esc_attr($instance_id); ?>">
+            <div class="book-reviews-toolbar__search">
+                <label class="book-reviews-toolbar__label" for="book-search-<?php echo esc_attr($instance_id); ?>">Search</label>
                 <input type="text"
-                       class="w-full h-10 px-4 py-2 border border-stone-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-stone-400 text-sm book-search-input"
+                       id="book-search-<?php echo esc_attr($instance_id); ?>"
+                       class="book-reviews-toolbar__input book-search-input"
                        data-instance="<?php echo esc_attr($instance_id); ?>"
                        placeholder="Search by title or creator...">
             </div>
 
-            <div class="flex flex-wrap gap-3">
+            <div class="book-reviews-toolbar__filters" aria-label="Filter media reviews">
                 <?php if (count($filter_options['media_types']) > 1): ?>
-                    <select class="h-10 px-4 py-2 border border-stone-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-stone-400 text-sm book-filter media-type-filter" data-instance="<?php echo esc_attr($instance_id); ?>">
-                        <option value="">All Types</option>
+                    <select class="book-reviews-toolbar__select book-filter media-type-filter" data-instance="<?php echo esc_attr($instance_id); ?>" aria-label="Filter by media type">
+                        <option value="">Type</option>
                         <?php foreach ($filter_options['media_types'] as $type): ?>
-                            <option value="<?php echo esc_attr($type); ?>"><?php echo esc_html(get_media_type_icon($type) . ' ' . get_media_type_label($type)); ?></option>
+                            <option value="<?php echo esc_attr($type); ?>"><?php echo esc_html(get_media_type_label($type)); ?></option>
                         <?php endforeach; ?>
                     </select>
                 <?php endif; ?>
 
-                <select class="h-10 px-4 py-2 border border-stone-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-stone-400 text-sm book-filter genre-filter" data-instance="<?php echo esc_attr($instance_id); ?>">
-                    <option value="">All Categories</option>
+                <select class="book-reviews-toolbar__select book-filter genre-filter" data-instance="<?php echo esc_attr($instance_id); ?>" aria-label="Filter by category">
+                    <option value="">Category</option>
                     <?php foreach ($filter_options['categories'] as $category): ?>
                         <option value="<?php echo esc_attr($category); ?>"><?php echo esc_html($category); ?></option>
                     <?php endforeach; ?>
                 </select>
 
-                <select class="h-10 px-4 py-2 border border-stone-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-stone-400 text-sm book-filter status-filter" data-instance="<?php echo esc_attr($instance_id); ?>">
-                    <option value="">All Statuses</option>
+                <select class="book-reviews-toolbar__select book-filter status-filter" data-instance="<?php echo esc_attr($instance_id); ?>" aria-label="Filter by status">
+                    <option value="">Status</option>
                     <?php foreach ($filter_options['statuses'] as $value => $label): ?>
                         <option value="<?php echo esc_attr($value); ?>"><?php echo esc_html($label); ?></option>
                     <?php endforeach; ?>
                 </select>
 
-                <select class="h-10 px-4 py-2 border border-stone-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-stone-400 text-sm book-filter rating-filter" data-instance="<?php echo esc_attr($instance_id); ?>">
-                    <option value="">All Ratings</option>
-                    <option value="5">5 Stars</option>
-                    <option value="4">4+ Stars</option>
-                    <option value="3">3+ Stars</option>
-                    <option value="2">2+ Stars</option>
-                    <option value="1">1+ Star</option>
+                <select class="book-reviews-toolbar__select book-filter rating-filter" data-instance="<?php echo esc_attr($instance_id); ?>" aria-label="Filter by rating">
+                    <option value="">Rating</option>
+                    <option value="1">1★+</option>
+                    <option value="2">2★+</option>
+                    <option value="3">3★+</option>
+                    <option value="4">4★+</option>
+                    <option value="5">5★</option>
                 </select>
+            </div>
 
-                <select class="h-10 px-4 py-2 border border-stone-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-stone-400 text-sm book-sort" data-instance="<?php echo esc_attr($instance_id); ?>">
+            <div class="book-reviews-toolbar__sort">
+                <div class="book-reviews-toolbar__label">Sort</div>
+                <select class="book-reviews-toolbar__select book-reviews-toolbar__select--sort book-sort" data-instance="<?php echo esc_attr($instance_id); ?>">
                     <option value="date-desc">Newest First</option>
                     <option value="date-asc">Oldest First</option>
                     <option value="title-asc">Title (A-Z)</option>
@@ -277,6 +286,7 @@ function book_reviews_render_media_filters($instance_id, $filter_options) {
                 </select>
             </div>
         </div>
+        <div class="book-reviews-results-summary" data-instance="<?php echo esc_attr($instance_id); ?>" aria-live="polite"></div>
     </div>
     <?php
 

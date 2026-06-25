@@ -1,10 +1,10 @@
 # Media Reviews for WordPress
 
-A WordPress plugin for curating, importing, and displaying books, movies, music albums, and video games with a polished admin workflow, block support, and responsive frontend layouts.
+A WordPress plugin for curating, importing, and displaying books, movies, TV shows, music albums, and video games with a polished admin workflow, block support, and responsive frontend layouts.
 
 ## Version
 
-Current version: `3.3.0`
+Current version: `3.4.0`
 
 ## Overview
 
@@ -98,6 +98,9 @@ Every media item uses the same base storage model, with labels and status values
 - `movie`
   Creator is treated as director, with watch-oriented statuses.
 
+- `tv`
+  Creator is treated as show creator, with TV watch-oriented statuses.
+
 - `music`
   Creator is treated as artist, with listening-oriented statuses.
 
@@ -111,6 +114,7 @@ Every media item uses the same base storage model, with labels and status values
 - Manage reviews for:
   - Books
   - Movies
+  - TV shows
   - Music albums
   - Video games
 - Add, edit, and delete media entries
@@ -120,19 +124,21 @@ Every media item uses the same base storage model, with labels and status values
 - Use media-specific field labels:
   - Book: Author, Reading Status
   - Movie: Director, Watch Status
+  - TV Show: Creator, Watch Status
   - Music: Artist, Listen Status
   - Game: Developer, Play Status
 - Filter the admin list by media type
 - Generate frontend shortcodes from a built-in shortcode generator
 - Import and export data as CSV
 - Import basic Amazon product metadata with a signed bookmarklet handoff
-- Search public APIs for books, movies, albums, and games, then import results into local WordPress data
+- Search public APIs for books, movies, TV shows, albums, and games, then import results into local WordPress data
 
 ### Frontend
 
 - Display reviews with `[media_reviews]`
 - Backward-compatible shortcode support with `[book_reviews]`
 - Insert a `Media Reviews` Gutenberg block in single-item or collection mode
+- Use a compact single-line command bar for search, filters, rating, and sorting
 - Search by title or creator
 - Filter by:
   - Media type
@@ -193,7 +199,7 @@ On activation, the plugin creates the `{prefix}_book_reviews` table automaticall
 
 ```text
 [media_reviews media_type="book"]
-[media_reviews media_type="movie,music" limit="12"]
+[media_reviews media_type="movie,tv,music" limit="12"]
 [media_reviews view="list" category="Fiction"]
 [media_reviews status="finished,abandoned"]
 [media_reviews show_filters="false"]
@@ -201,8 +207,8 @@ On activation, the plugin creates the `{prefix}_book_reviews` table automaticall
 
 ### Supported attributes
 
-- `media_type`  
-  Comma-separated media types. Supported values: `book`, `movie`, `music`, `game`. Default: `all`
+- `media_type`
+  Comma-separated media types. Supported values: `book`, `movie`, `tv`, `music`, `game`. Default: `all`
 
 - `view`  
   Display mode. Supported values: `grid`, `list`. Default: `grid`
@@ -237,6 +243,13 @@ On activation, the plugin creates the `{prefix}_book_reviews` table automaticall
 - `want_to_watch`
 - `abandoned`
 
+### TV Shows
+
+- `finished`
+- `watching`
+- `want_to_watch`
+- `abandoned`
+
 ### Music
 
 - `listened`
@@ -268,7 +281,7 @@ The plugin includes an admin-only API import workflow inside **Media Reviews > A
 ### Providers used
 
 - Open Library Search API and Covers API for books
-- TMDb for movies
+- TMDb for movies and TV shows
 - MusicBrainz and Cover Art Archive for music albums
 - RAWG for video games
 
@@ -281,7 +294,7 @@ The plugin includes an admin-only API import workflow inside **Media Reviews > A
 
 ### Required API keys
 
-- TMDb API key
+- TMDb API key, required for movie and TV show lookups
 - RAWG API key
 
 Open Library, MusicBrainz, and Cover Art Archive do not require user-managed keys in this plugin version.
@@ -298,7 +311,7 @@ The plugin includes a signed Amazon bookmarklet flow for quickly starting a medi
 
 ### Usage
 
-1. Open an Amazon product page for a book, movie, album, or game
+1. Open an Amazon product page for a book, movie, TV show, album, or game
 2. Click the bookmarklet
 3. The plugin opens **Add New Media** with imported fields prefilled
 4. Review the entry and complete rating, status, category, and review text manually
@@ -353,9 +366,9 @@ Current schema fields:
 | Field | Description |
 | --- | --- |
 | `id` | Primary key |
-| `media_type` | `book`, `movie`, `music`, or `game` |
+| `media_type` | `book`, `movie`, `tv`, `music`, or `game` |
 | `title` | Media title |
-| `creator` | Author, director, artist, or developer |
+| `creator` | Author, director, show creator, artist, or developer |
 | `rating` | Integer from 0 to 5 |
 | `review_text` | Review content |
 | `cover_image_url` | Cover/poster/artwork URL |
@@ -375,7 +388,7 @@ The Amazon bookmarklet import is intentionally limited:
 
 ## Backward Compatibility
 
-Version `3.3.0` includes migration logic and compatibility support for older installations. It supports older data structures and naming, including:
+Version `3.4.0` includes migration logic and compatibility support for older installations. It supports older data structures and naming, including:
 
 - `author` -> `creator`
 - `genre` -> `category`
@@ -390,6 +403,13 @@ Version `3.3.0` includes migration logic and compatibility support for older ins
 - MySQL 5.6+
 
 ## Changelog
+
+### 3.4.0
+
+- Added TV show support across admin forms, API lookup, frontend filters, shortcode generation, and block controls
+- Added TMDb TV search integration for API imports
+- Added TV statuses and labels for collection displays
+- Refined the frontend filter interface into a compact command bar with unified search and dropdown styling
 
 ### 3.3.0
 

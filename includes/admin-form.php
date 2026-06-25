@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
 global $wpdb;
 $table_name = $wpdb->prefix . 'book_reviews';
 
-$allowed_media_types = array('book', 'movie', 'music', 'game');
+$allowed_media_types = array('book', 'movie', 'music', 'game', 'tv');
 $prefill_payload = null;
 $prefill_key = isset($_GET['import_prefill']) ? sanitize_key(wp_unslash($_GET['import_prefill'])) : '';
 $import_source = isset($_GET['import_source']) ? sanitize_key(wp_unslash($_GET['import_source'])) : '';
@@ -182,6 +182,7 @@ if (!empty($lookup_query)) {
                     <option value="movie" <?php selected($form_values['media_type'], 'movie'); ?>>🎬 Movie</option>
                     <option value="music" <?php selected($form_values['media_type'], 'music'); ?>>🎵 Music Album</option>
                     <option value="game" <?php selected($form_values['media_type'], 'game'); ?>>🎮 Video Game</option>
+                    <option value="tv" <?php selected($form_values['media_type'], 'tv'); ?>>📺 TV Show</option>
                 </select>
             </div>
             
@@ -395,6 +396,7 @@ if (!empty($lookup_query)) {
                             <option value="movie" <?php selected($lookup_media_type, 'movie'); ?>>Movie</option>
                             <option value="music" <?php selected($lookup_media_type, 'music'); ?>>Music Album</option>
                             <option value="game" <?php selected($lookup_media_type, 'game'); ?>>Video Game</option>
+                            <option value="tv" <?php selected($lookup_media_type, 'tv'); ?>>TV Show</option>
                         </select>
                     </div>
                     <div class="book-reviews-lookup-field book-reviews-lookup-field-query">
@@ -670,6 +672,27 @@ jQuery(document).ready(function($) {
                 abandoned: { label: 'Date Abandoned', help: 'When you stopped playing' }
             },
             typeName: 'game'
+        },
+        tv: {
+            creator: { label: 'Creator', help: 'The showrunner or creator' },
+            category: { label: 'Genre', help: 'e.g., Drama, Comedy, Thriller' },
+            cover: { label: 'Poster Image URL', help: 'Direct URL to the show poster' },
+            status: {
+                label: 'Watch Status',
+                options: [
+                    { value: 'finished', label: 'Finished' },
+                    { value: 'watching', label: 'Currently Watching' },
+                    { value: 'want_to_watch', label: 'Want to Watch' },
+                    { value: 'abandoned', label: 'Abandoned' }
+                ]
+            },
+            date: {
+                finished: { label: 'Date Finished', help: 'When you finished the show' },
+                watching: { label: 'Date Started', help: 'When you started watching' },
+                want_to_watch: { label: 'Date Added', help: 'When you added to your list' },
+                abandoned: { label: 'Date Abandoned', help: 'When you stopped watching' }
+            },
+            typeName: 'TV show'
         }
     };
     

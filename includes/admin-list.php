@@ -54,6 +54,7 @@ $book_count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE media_type 
 $movie_count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE media_type = 'movie'");
 $music_count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE media_type = 'music'");
 $game_count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE media_type = 'game'");
+$tv_count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE media_type = 'tv'");
 $total_count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
 
 // Media type icons
@@ -63,7 +64,8 @@ if (!function_exists('get_media_icon')) {
             'book' => '📚',
             'movie' => '🎬',
             'music' => '🎵',
-            'game' => '🎮'
+            'game' => '🎮',
+            'tv' => '📺',
         );
         return $icons[$media_type] ?? '📄';
     }
@@ -76,7 +78,8 @@ if (!function_exists('get_media_label')) {
             'book' => 'Book',
             'movie' => 'Movie',
             'music' => 'Album',
-            'game' => 'Game'
+            'game' => 'Game',
+            'tv' => 'TV Show',
         );
         return $labels[$media_type] ?? $media_type;
     }
@@ -130,10 +133,17 @@ if (!function_exists('get_media_label')) {
                 </a> |
             </li>
             <li style="display: inline-block; margin: 0;">
-                <a href="<?php echo admin_url('admin.php?page=book-reviews&media_type=game'); ?>" 
+                <a href="<?php echo admin_url('admin.php?page=book-reviews&media_type=game'); ?>"
                    class="<?php echo $media_filter === 'game' ? 'current' : ''; ?>"
                    style="padding: 5px 10px; text-decoration: none;">
                     🎮 Games <span class="count">(<?php echo $game_count; ?>)</span>
+                </a> |
+            </li>
+            <li style="display: inline-block; margin: 0;">
+                <a href="<?php echo admin_url('admin.php?page=book-reviews&media_type=tv'); ?>"
+                   class="<?php echo $media_filter === 'tv' ? 'current' : ''; ?>"
+                   style="padding: 5px 10px; text-decoration: none;">
+                    📺 TV Shows <span class="count">(<?php echo $tv_count; ?>)</span>
                 </a>
             </li>
         </ul>

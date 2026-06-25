@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Media Reviews
  * Plugin URI: https://unbrokenhorse.com/media-reviews
- * Description: A WordPress plugin to manage and display reviews for books, movies, music albums, and video games with ratings
- * Version: 3.3.0
+ * Description: A WordPress plugin to manage and display reviews for books, movies, TV shows, music albums, and video games with ratings
+ * Version: 3.4.0
  * Author: UnbrokenHorse.com
  * Author URI: https://unbrokenhorse.com
  * License: GPL v2 or later
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('BOOK_REVIEWS_VERSION', '3.3.0');
+define('BOOK_REVIEWS_VERSION', '3.4.0');
 define('BOOK_REVIEWS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('BOOK_REVIEWS_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -218,7 +218,7 @@ function book_reviews_handle_admin_form_submission() {
 
     global $wpdb;
     $table_name = $wpdb->prefix . 'book_reviews';
-    $allowed_media_types = array('book', 'movie', 'music', 'game');
+    $allowed_media_types = array('book', 'movie', 'music', 'game', 'tv');
 
     $is_edit = !empty($_POST['is_edit']);
     $item_id = $is_edit && !empty($_POST['item_id']) ? absint($_POST['item_id']) : 0;
